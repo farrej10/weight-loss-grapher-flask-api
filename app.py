@@ -29,12 +29,16 @@ def weights():
     if request.method == "GET":
         
         #Connect to DB and get all the info from weights table
-        #return json
         cur = mysql.connection.cursor()
         cur.execute("SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights;")
-        data = cur.fetchall()
+        
+        #get field names and change CAST(timestamp AS CHAR(30)) to timestamp
+        fields = [i[0] for i in cur.description]
+        fields[1] = 'timestamp'
+        results = [dict(zip(fields,row))   for row in cur.fetchall()]
+        
         cur.close()
-        return json.dumps(data),status.HTTP_200_OK
+        return json.dumps(results),status.HTTP_200_OK
 
     if request.method == "POST":
         
