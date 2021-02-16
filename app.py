@@ -20,19 +20,8 @@ app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
 mysql = MySQL(app)
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
 def index():
-    if request.method == "POST":
-        details = request.form
-        firstName = details['fname']
-        lastName = details['lname']
-        weight = 55
-        firstName = 1
-        cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO weights(user_id,weight) VALUES (%s,%s)", (firstName,weight))
-        mysql.connection.commit()
-        cur.close()
-        return 'success'
     return render_template('index.html')
 
 @app.route('/weights', methods=['GET','POST'])
