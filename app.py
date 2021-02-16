@@ -31,7 +31,7 @@ def weights():
         #Connect to DB and get all the info from weights table
         #return json
         cur = mysql.connection.cursor()
-        cur.execute("SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM fattygrapher.weights;")
+        cur.execute("SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights;")
         data = cur.fetchall()
         cur.close()
         return json.dumps(data),status.HTTP_200_OK
@@ -41,7 +41,6 @@ def weights():
         #Check if request has json and has the two required fields
         if not request.json or not 'user' in request.json or not 'weight' in request.json:
             return "",status.HTTP_400_BAD_REQUEST
-
 
         #extract content + make timestamp
         content = request.json
@@ -55,7 +54,7 @@ def weights():
         cur = mysql.connection.cursor()
 
         try:
-            cur.execute("INSERT INTO `fattygrapher`.`weights` (`user_id`,`timestamp`,`weight`) VALUES (%s,%s,%s);",(user,timestamp,weight))
+            cur.execute("INSERT INTO `weightlossgrapher`.`weights` (`user_id`,`timestamp`,`weight`) VALUES (%s,%s,%s);",(user,timestamp,weight))
             mysql.connection.commit()
         except:
             mysql.connection.rollback()
@@ -63,9 +62,7 @@ def weights():
 
         cur.close()
         return json.dumps(content),status.HTTP_201_CREATED
-        
-    return "",status.HTTP_405_METHOD_NOT_ALLOWED
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
