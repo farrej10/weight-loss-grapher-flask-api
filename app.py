@@ -35,27 +35,33 @@ def weights():
         if(user==None):
             try:
                 cur.execute("SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights")
-            except:
-                return jsonify(error="500 Internal Server Error"),status.HTTP_500_INTERNAL_SERVER_ERROR
+            except Exception as e:
+                #If this fails its likely an error related to connection to mysql or lack there of
+                return jsonify(error=str(e)),status.HTTP_500_INTERNAL_SERVER_ERROR
 
         else:
             try:
-                cur.execute("SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s;",user)
-            except:
-                return jsonify(error= "404 User Not Found"),status.HTTP_404_NOT_FOUND
+                cur.execute("SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s;", (user,))
+            except Exception as e:
+                #Using 400 as its likely a bad request
+                return jsonify(error=str(e)),status.HTTP_400_BAD_REQUEST
 
         fields = [i[0] for i in cur.description]
-        fields[1] = 'timestamp'
+        fields[1] = 'timestamp'#change field name
         results = [dict(zip(fields,row))   for row in cur.fetchall()]
-
         cur.close()
-        return json.dumps(results),status.HTTP_200_OK
+
+        if(results):
+            return json.dumps(results),status.HTTP_200_OK
+        else:
+            return jsonify(error="User Not Found"),status.HTTP_404_NOT_FOUND
+
 
     if request.method == "POST":
         
         #Check if request has json and has the two required fields
         if not request.json or not 'user' in request.json or not 'weight' in request.json:
-            return jsonify(),status.HTTP_400_BAD_REQUEST
+            return jsonify(error="400 Bad Request"),status.HTTP_400_BAD_REQUEST
 
         #extract content + make timestamp
         content = request.json
@@ -67,13 +73,12 @@ def weights():
         content['timestamp'] = timestamp 
 
         cur = mysql.connection.cursor()
-
         try:
             cur.execute("INSERT INTO `weightlossgrapher`.`weights` (`user_id`,`timestamp`,`weight`) VALUES (%s,%s,%s);",(user,timestamp,weight))
             mysql.connection.commit()
-        except:
+        except Exception as e:
             mysql.connection.rollback()
-            return "",status.HTTP_400_BAD_REQUEST
+            return jsonify(error=str(e)),status.HTTP_400_BAD_REQUEST
 
         cur.close()
         return json.dumps(content),status.HTTP_201_CREATED
