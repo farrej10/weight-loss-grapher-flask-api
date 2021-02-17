@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
 from flask_mysqldb import MySQL
 from flask_api import status
+from flask import jsonify
 from dotenv import load_dotenv
 import pdb
 import json
@@ -28,15 +29,25 @@ def index():
 def weights():
     if request.method == "GET":
         
-        #Connect to DB and get all the info from weights table
+        user = request.args.get('user',default=None,type=str)
         cur = mysql.connection.cursor()
-        cur.execute("SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights;")
-        
-        #get field names and change CAST(timestamp AS CHAR(30)) to timestamp
+
+        if(user==None):
+            try:
+                cur.execute("SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights")
+            except:
+                return jsonify(error="500 Internal Server Error"),status.HTTP_500_INTERNAL_SERVER_ERROR
+
+        else:
+            try:
+                cur.execute("SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s;",user)
+            except:
+                return jsonify(error= "404 User not found"),status.HTTP_404_NOT_FOUND
+
         fields = [i[0] for i in cur.description]
         fields[1] = 'timestamp'
         results = [dict(zip(fields,row))   for row in cur.fetchall()]
-        
+
         cur.close()
         return json.dumps(results),status.HTTP_200_OK
 
@@ -44,7 +55,7 @@ def weights():
         
         #Check if request has json and has the two required fields
         if not request.json or not 'user' in request.json or not 'weight' in request.json:
-            return "",status.HTTP_400_BAD_REQUEST
+            return jsonify(),status.HTTP_400_BAD_REQUEST
 
         #extract content + make timestamp
         content = request.json
