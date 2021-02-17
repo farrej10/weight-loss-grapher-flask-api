@@ -42,7 +42,7 @@ def weights():
             try:
                 cur.execute("SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s;",user)
             except:
-                return jsonify(error= "404 User not found"),status.HTTP_404_NOT_FOUND
+                return jsonify(error= "404 User Not Found"),status.HTTP_404_NOT_FOUND
 
         fields = [i[0] for i in cur.description]
         fields[1] = 'timestamp'
