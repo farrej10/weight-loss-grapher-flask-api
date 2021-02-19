@@ -131,7 +131,6 @@ def weights():
         if(start==end):
             start=start+" 00:00:00"
             end=end+ " 23:59:59"
-            #return jsonify(error="Bad Request"),status.HTTP_400_BAD_REQUEST
         # user is unique therfore select based on that
         if (user != None):
             return get_weights_by_user(user,start,end)
