@@ -101,8 +101,7 @@ def weights():
     if request.method == "GET":
 
         user = request.args.get('user', default=None, type=str)
-        cur = mysql.connection.cursor()
-
+        
         if(user == None):
             return get_all_weights()
 
