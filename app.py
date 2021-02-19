@@ -60,7 +60,28 @@ def get_user_weights(user):  # Return all weights for a user
     if(results):
         return jsonify(results), status.HTTP_200_OK
     else:
-        return jsonify(error="User Not Found"), status.HTTP_404_NOT_FOUND
+        return jsonify(error="User Not Found or No Weight Data with that User"), status.HTTP_404_NOT_FOUND
+
+
+def get_name_weights(name):  # return all weights for a user's name
+
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute(
+            "SELECT user_id, name, timestamp, weight FROM user t1 INNER JOIN weights t2 ON t1.id = t2.user_id WHERE name = %s;", (name,))
+    except Exception as e:
+        # Using 400 as its likely a bad request
+        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    fields = [i[0] for i in cur.description]
+    fields[2] = 'timestamp'  # change field name
+    results = [dict(zip(fields, row)) for row in cur.fetchall()]
+    cur.close()
+
+    if(results):
+        return jsonify(results), status.HTTP_200_OK
+    else:
+        return jsonify(error="Name Not Found or No Weight Data with that Name"), status.HTTP_404_NOT_FOUND
 
 
 def create_user_weight(request):  # Create a weight entry for a user
@@ -74,7 +95,8 @@ def create_user_weight(request):  # Create a weight entry for a user
     user = content['user']
     weight = content['weight']
     ts = time.time()
-    timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = datetime.datetime.fromtimestamp(
+        ts).strftime('%Y-%m-%d %H:%M:%S')
     # add the generated timestamp used for response
     content['timestamp'] = timestamp
 
@@ -101,15 +123,19 @@ def weights():
     if request.method == "GET":
 
         user = request.args.get('user', default=None, type=str)
-        
-        if(user == None):
-            return get_all_weights()
+        name = request.args.get('name', default=None, type=str)
 
-        else:
+        # user is unique therfore select based on that
+        if (user != None):
             return get_user_weights(user)
+        if (name != None):
+            return get_name_weights(name)
+        else:
+            return get_all_weights()
 
     if request.method == "POST":
         return create_user_weight(request)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
