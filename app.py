@@ -42,12 +42,12 @@ def get_weigths():  # Return weights table
         return jsonify(error="Internal Server Error"), status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
-def get_weights_by_user(user):  # Return all weights for a user
+def get_weights_by_user(user,start,end):  # Return all weights for a user
 
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s;", (user,))
+            "SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s AND timestamp BETWEEN  %s AND %s;", (user,start,end))
     except Exception as e:
         # Using 400 as its likely a bad request
         return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -63,12 +63,12 @@ def get_weights_by_user(user):  # Return all weights for a user
         return jsonify(error="User Not Found or No Weight Data with that User"), status.HTTP_404_NOT_FOUND
 
 
-def get_weights_by_name(name):  # return all weights for a user's name
+def get_weights_by_name(name,start,end):  # return all weights for a user's name
 
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "SELECT user_id, name, timestamp, weight FROM user t1 INNER JOIN weights t2 ON t1.id = t2.user_id WHERE name = %s;", (name,))
+            "SELECT user_id, name, timestamp, weight FROM user t1 INNER JOIN weights t2 ON t1.id = t2.user_id WHERE name = %s AND timestamp BETWEEN  %s AND %s;", (name,start,end))
     except Exception as e:
         # Using 400 as its likely a bad request
         return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -124,12 +124,14 @@ def weights():
 
         user = request.args.get('user', default=None, type=str)
         name = request.args.get('name', default=None, type=str)
+        start = request.args.get('start',default='1970-01-01 12:00:00', type=str)
+        end = request.args.get('end',default=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),type=str)
 
         # user is unique therfore select based on that
         if (user != None):
-            return get_weights_by_user(user)
+            return get_weights_by_user(user,start,end)
         if (name != None):
-            return get_weights_by_name(name)
+            return get_weights_by_name(name,start,end)
         else:
             return get_weigths()
 
