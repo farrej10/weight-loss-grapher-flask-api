@@ -126,7 +126,12 @@ def weights():
         name = request.args.get('name', default=None, type=str)
         start = request.args.get('start',default='1970-01-01 12:00:00', type=str)
         end = request.args.get('end',default=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),type=str)
-
+        
+        
+        if(start==end):
+            start=start+" 00:00:00"
+            end=end+ " 23:59:59"
+            #return jsonify(error="Bad Request"),status.HTTP_400_BAD_REQUEST
         # user is unique therfore select based on that
         if (user != None):
             return get_weights_by_user(user,start,end)
