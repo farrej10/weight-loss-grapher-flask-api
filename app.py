@@ -21,7 +21,7 @@ app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
 mysql = MySQL(app)
 
 
-def get_all_weights():  # Return weights table
+def get_weigths():  # Return weights table
 
     cur = mysql.connection.cursor()
     try:
@@ -42,7 +42,7 @@ def get_all_weights():  # Return weights table
         return jsonify(error="Internal Server Error"), status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
-def get_user_weights(user):  # Return all weights for a user
+def get_weights_by_user(user):  # Return all weights for a user
 
     cur = mysql.connection.cursor()
     try:
@@ -63,7 +63,7 @@ def get_user_weights(user):  # Return all weights for a user
         return jsonify(error="User Not Found or No Weight Data with that User"), status.HTTP_404_NOT_FOUND
 
 
-def get_name_weights(name):  # return all weights for a user's name
+def get_weights_by_name(name):  # return all weights for a user's name
 
     cur = mysql.connection.cursor()
     try:
@@ -84,7 +84,7 @@ def get_name_weights(name):  # return all weights for a user's name
         return jsonify(error="Name Not Found or No Weight Data with that Name"), status.HTTP_404_NOT_FOUND
 
 
-def create_user_weight(request):  # Create a weight entry for a user
+def create_weight_for_user(request):  # Create a weight entry for a user
 
     # Check if request has json and has the two required fields
     if not request.json or not 'user' in request.json or not 'weight' in request.json:
@@ -127,14 +127,14 @@ def weights():
 
         # user is unique therfore select based on that
         if (user != None):
-            return get_user_weights(user)
+            return get_weights_by_user(user)
         if (name != None):
-            return get_name_weights(name)
+            return get_weights_by_name(name)
         else:
-            return get_all_weights()
+            return get_weigths()
 
     if request.method == "POST":
-        return create_user_weight(request)
+        return create_weight_for_user(request)
 
 
 if __name__ == '__main__':
