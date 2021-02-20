@@ -42,12 +42,12 @@ def get_weigths(start, end):  # Return weights table
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
 
-def get_weights_by_user(user, start, end):  # Return all weights for a user
+def get_weights_by_user(user_id, start, end):  # Return all weights for a user
 
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;", (user, start, end))
+            "SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;", (user_id, start, end))
     except Exception as e:
         # Using 400 as its likely a bad request
         return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -68,7 +68,7 @@ def get_weights_by_name(name, start, end):  # return all weights for a user's na
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "SELECT user_id, name, timestamp, weight FROM user t1 INNER JOIN weights t2 ON t1.id = t2.user_id WHERE name = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;", (name, start, end))
+            "SELECT user_id, name, CAST(timestamp AS CHAR(30)), weight FROM user t1 INNER JOIN weights t2 ON t1.id = t2.user_id WHERE name = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;", (name, start, end))
     except Exception as e:
         # Using 400 as its likely a bad request
         return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -87,12 +87,12 @@ def get_weights_by_name(name, start, end):  # return all weights for a user's na
 def create_weight_for_user(request):  # Create a weight entry for a user
 
     # Check if request has json and has the two required fields
-    if not request.json or not 'user' in request.json or not 'weight' in request.json:
+    if not request.json or not 'user_id' in request.json or not 'weight' in request.json:
         return jsonify(error="400 Bad Request"), status.HTTP_400_BAD_REQUEST
 
     # extract content + make timestamp
     content = request.json
-    user = content['user']
+    user_id = content['user_id']
     weight = content['weight']
     ts = time.time()
     timestamp = datetime.datetime.fromtimestamp(
@@ -103,7 +103,7 @@ def create_weight_for_user(request):  # Create a weight entry for a user
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "INSERT INTO `weightlossgrapher`.`weights` (`user_id`,`timestamp`,`weight`) VALUES (%s,%s,%s);", (user, timestamp, weight))
+            "INSERT INTO `weightlossgrapher`.`weights` (`user_id`,`timestamp`,`weight`) VALUES (%s,%s,%s);", (user_id, timestamp, weight))
         mysql.connection.commit()
     except Exception as e:
         mysql.connection.rollback()
@@ -227,14 +227,14 @@ def user():
 
     if request.method == "GET":
         paramslist = list(request.args.to_dict().keys())
-        if 'user' in paramslist:
-            paramslist.remove('user')
+        if 'id' in paramslist:
+            paramslist.remove('id')
         if 'name' in paramslist:
             paramslist.remove('name')
         if(paramslist):
             return jsonify(error="400 Bad Request Unkown Parameters: \'{}\'".format('\', \''.join(paramslist))), status.HTTP_400_BAD_REQUEST
         else:
-            user = request.args.get('user', default=None, type=str)
+            user = request.args.get('id', default=None, type=str)
             name = request.args.get('name', default=None, type=str)
             return get_users(user, name)
 
