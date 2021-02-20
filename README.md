@@ -30,7 +30,7 @@ Or
 
 # REST API
 
-The REST API to the example app is described below.
+The REST API usage is described below.
 
 ## Get list of users
 
@@ -266,26 +266,53 @@ Returns a list of all the weight data for all users with a specific name
     Content-Length: 5402
     Server: Werkzeug/1.0.1 Python/3.9.1
     Date: Sat, 20 Feb 2021 18:35:29 GMT
-
+    
     [
       {
         "name": "test", 
-        "timestamp": "Fri, 12 Feb 2021 21:46:09 GMT", 
+        "timestamp": "2021-02-19 21:43:25", 
         "user_id": 1, 
-        "weight": 55.0
+        "weight": 81.5
       }, 
       {
         "name": "test", 
-        "timestamp": "Fri, 12 Feb 2021 21:57:10 GMT", 
-        "user_id": 1, 
-        "weight": 55.0
+        "timestamp": "2021-02-20 00:49:46", 
+        "user_id": 2, 
+        "weight": 81.5
       }, 
       {
         "name": "test", 
-        "timestamp": "Sun, 14 Feb 2021 23:12:31 GMT", 
+        "timestamp": "2021-02-20 17:34:27", 
         "user_id": 1, 
-        "weight": 51.0
+        "weight": 82.5
       }
     ]
 
+## Additional Filter Parameters
+
+There are additional paramters that can be used to narrow down the selection:
+
+- The `start` parameter allows filtering from that date to the current date.
+
+- The `end` parameter allows filtering from the start of time till that date.
+
+- Both can be used together to get a range between `start` to `end` dates.
+
+- If `start` and `end` are equal, the results will be all the weights on that date.
+
+A note on dates, they must be in the numeric form `year-month-day` e.g. `2020-5-25`
+
+### Example Requests
+
+Get user `1`'s weights from `2020-05-02` till present
+
+`GET /weights?user=1&start=2020-05-02`
+
+Get user `1`'s weights from the start of time until `2020-05-02`
+
+`GET /weights?user=1&end=2020-05-02`
+
+Get user `1`'s weight between `2020-05-02` and `2020-07-02`
+
+`GET /weights?user=1&start=2020-05-02&end=2020-07-02`
 
