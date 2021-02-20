@@ -172,11 +172,6 @@ def create_user():
     return jsonify(results), status.HTTP_201_CREATED
 
 
-@app.route('/', methods=['GET'])
-def index():
-    return render_template('index.html')
-
-
 @app.route('/weights', methods=['GET', 'POST'])
 def weights():
 
