@@ -84,7 +84,8 @@ def get_weights_by_name(name, start, end):  # return all weights for a user's na
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
 
-def create_weight_for_user(request):  # Create a weight entry for a user
+# Create a weight entry for a user
+def create_weight_for_user(request):
 
     # Check if request has json and has the two required fields
     if not request.json or not 'user_id' in request.json or not 'weight' in request.json:
@@ -94,11 +95,14 @@ def create_weight_for_user(request):  # Create a weight entry for a user
     content = request.json
     user_id = content['user_id']
     weight = content['weight']
-    ts = time.time()
-    timestamp = datetime.datetime.fromtimestamp(
-        ts).strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = None
+    if (not 'timestamp' in request.json):
+        ts = time.time()
+        timestamp = datetime.datetime.fromtimestamp(
+            ts).strftime('%Y-%m-%d %H:%M:%S')
     # add the generated timestamp used for response
-    content['timestamp'] = timestamp
+    else:
+        timestamp = content['timestamp'] 
 
     cur = mysql.connection.cursor()
     try:
@@ -195,11 +199,11 @@ def weights():
             time.time()).strftime('%Y-%m-%d %H:%M:%S')
         end = request.args.get('end', default=now, type=str)
 
-        if(end !=now):
+        if(end != now):
             end += " 23:59:59"
 
         if(start == end):
-            start +=" 00:00:00"
+            start += " 00:00:00"
             end += " 23:59:59"
         # user is unique therfore select based on that
         if (user != None):
