@@ -86,7 +86,6 @@ def get_weights_by_name(name, start, end):  # return all weights for a user's na
 
 # Create a weight entry for a user
 def create_weight_for_user(request):
-
     # Check if request has json and has the two required fields
     if not request.json or not 'user_id' in request.json or not 'weight' in request.json:
         return jsonify(error="400 Bad Request"), status.HTTP_400_BAD_REQUEST
@@ -102,7 +101,7 @@ def create_weight_for_user(request):
             ts).strftime('%Y-%m-%d %H:%M:%S')
     # add the generated timestamp used for response
     else:
-        timestamp = content['timestamp'] 
+        timestamp = content['timestamp']
 
     cur = mysql.connection.cursor()
     try:
