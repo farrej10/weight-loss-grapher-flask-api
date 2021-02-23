@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, make_response
 from flask_mysqldb import MySQL
 from flask_api import status
 from flask import jsonify
@@ -8,6 +8,10 @@ import json
 import os
 import time
 import datetime
+import jwt
+from functools import wraps
+
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
@@ -17,8 +21,38 @@ app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST')
 app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER')
 app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
 app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 mysql = MySQL(app)
+
+# authtoken
+
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'x-access-token' in request.headers:
+            token = request.headers['x-access-token']
+
+        if not token:
+            return jsonify({'message': 'Token is missing!'}), 401
+        try:
+            cur = mysql.connection.cursor()
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+            mysqlcommand = "SELECT * FROM weightlossgrapher.user WHERE id = %s;"
+            try:
+                cur.execute(mysqlcommand, (data['id'],))
+            except Exception as e:
+                # If this fails its likely an error related to connection to mysql or lack there of
+                return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+            current_user = cur.fetchone()
+        except:
+            return jsonify({'error': 'Token Expired'}), status.HTTP_401_UNAUTHORIZED
+
+        return f(current_user, *args, **kwargs)
+
+    return decorated
 
 
 def get_weigths(start, end):  # Return weights table
@@ -42,8 +76,12 @@ def get_weigths(start, end):  # Return weights table
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
 
-def get_weights_by_user(user_id, start, end):  # Return all weights for a user
+@token_required
+# Return all weights for a user
+def get_weights_by_user(current_user, user_id, start, end):
 
+    if (str(current_user[0]) != user_id):
+        return jsonify(error="UNAUTHORIZED"), status.HTTP_401_UNAUTHORIZED
     cur = mysql.connection.cursor()
     try:
         cur.execute(
@@ -116,7 +154,7 @@ def create_weight_for_user(request):
     return jsonify(content), status.HTTP_201_CREATED
 
 
-def get_users(id, name):  # Return weights table
+def get_users(id, name):
 
     cur = mysql.connection.cursor()
     mysqlcommand = ""
@@ -143,7 +181,7 @@ def get_users(id, name):  # Return weights table
     cur.close()
 
     if(results):
-        return jsonify(results), status.HTTP_200_OK
+        return jsonify({'users': results}), status.HTTP_200_OK
     else:
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
@@ -243,6 +281,16 @@ def user():
             return jsonify(error="400 Bad Request Unkown Parameters: \'{}\'".format('\', \''.join(paramslist))), status.HTTP_400_BAD_REQUEST
         else:
             return create_user()
+
+
+@app.route('/login')
+def login():
+    auth = request.authorization
+
+    token = jwt.encode({'id': 4, 'exp': datetime.datetime.utcnow(
+    ) + datetime.timedelta(minutes=1)}, app.config['SECRET_KEY'])
+
+    return jsonify({'token': token.decode('UTF-8')})
 
 
 if __name__ == '__main__':
