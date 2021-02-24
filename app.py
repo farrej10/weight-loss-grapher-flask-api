@@ -290,7 +290,7 @@ def login():
     token = jwt.encode({'id': 4, 'exp': datetime.datetime.utcnow(
     ) + datetime.timedelta(minutes=1)}, app.config['SECRET_KEY'])
 
-    return jsonify({'token': token.decode('UTF-8')})
+    return jsonify({'token': token})
 
 
 if __name__ == '__main__':
