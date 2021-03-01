@@ -31,6 +31,7 @@ mysql = MySQL(app)
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+
         token = None
         if 'x-access-token' in request.headers:
             token = request.headers['x-access-token']
@@ -39,7 +40,8 @@ def token_required(f):
             return jsonify({'message': 'Token is missing!'}), 401
         try:
             cur = mysql.connection.cursor()
-            data = jwt.decode(token, app.config['SECRET_KEY'])
+            data = jwt.decode(
+                token, app.config['SECRET_KEY'], algorithms=['HS256'])
             mysqlcommand = "SELECT * FROM weightlossgrapher.user WHERE id = %s;"
             try:
                 cur.execute(mysqlcommand, (data['id'],))
@@ -55,7 +57,11 @@ def token_required(f):
     return decorated
 
 
-def get_weigths(start, end):  # Return weights table
+@token_required
+def get_weigths(current_user, start, end):  # Return weights table
+
+    if(current_user[2] != 1):
+        return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
 
     cur = mysql.connection.cursor()
     try:
@@ -101,7 +107,12 @@ def get_weights_by_user(current_user, user_id, start, end):
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
 
-def get_weights_by_name(name, start, end):  # return all weights for a user's name
+@token_required
+# return all weights for a user's name
+def get_weights_by_name(current_user, name, start, end):
+
+    if(current_user[2] != 1):
+        return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
 
     cur = mysql.connection.cursor()
     try:
@@ -123,7 +134,9 @@ def get_weights_by_name(name, start, end):  # return all weights for a user's na
 
 
 # Create a weight entry for a user
-def create_weight_for_user(request):
+@token_required
+def create_weight_for_user(current_user, request):
+
     # Check if request has json and has the two required fields
     if not request.json or not 'user_id' in request.json or not 'weight' in request.json:
         return jsonify(error="400 Bad Request"), status.HTTP_400_BAD_REQUEST
@@ -133,6 +146,10 @@ def create_weight_for_user(request):
     user_id = content['user_id']
     weight = content['weight']
     timestamp = None
+
+    if (str(current_user[0]) != user_id and current_user[2] != 1):
+        return jsonify(error="UNAUTHORIZED"), status.HTTP_401_UNAUTHORIZED
+
     if (not 'timestamp' in request.json):
         ts = time.time()
         timestamp = datetime.datetime.fromtimestamp(
@@ -154,7 +171,11 @@ def create_weight_for_user(request):
     return jsonify(content), status.HTTP_201_CREATED
 
 
-def get_users(id, name):
+@token_required
+def get_users(current_user, id, name):
+
+    if(current_user[2] != 1):
+        return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
 
     cur = mysql.connection.cursor()
     mysqlcommand = ""
@@ -186,7 +207,12 @@ def get_users(id, name):
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
 
-def create_user():
+@token_required
+def create_user(current_user):
+
+    if(current_user[2] != 1):
+        return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
+
     # Check if request has json and has the two required fields
     if not request.json or not 'name' in request.json:
         return jsonify(error="400 Bad Request"), status.HTTP_400_BAD_REQUEST
@@ -288,7 +314,7 @@ def login():
     auth = request.authorization
 
     token = jwt.encode({'id': 4, 'exp': datetime.datetime.utcnow(
-    ) + datetime.timedelta(minutes=1)}, app.config['SECRET_KEY'])
+    ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
     return jsonify({'token': token})
 
