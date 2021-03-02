@@ -9,6 +9,7 @@ import os
 import time
 import datetime
 import jwt
+import bcrypt
 from functools import wraps
 
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -313,11 +314,49 @@ def user():
 def login():
     auth = request.authorization
 
-    token = jwt.encode({'id': 4, 'exp': datetime.datetime.utcnow(
+
+    cur = mysql.connection.cursor()
+    mysqlcommand = "SELECT pass FROM weightlossgrapher.user WHERE id = %s;"
+    id = auth['username']
+    passwd = auth['password']
+    try:
+        cur.execute(mysqlcommand, (id,))
+    except Exception as e:
+        # If this fails its likely an error related to connection to mysql or lack there of
+        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    fields = [i[0] for i in cur.description]
+    results = [dict(zip(fields, row)) for row in cur.fetchall()]
+    cur.close()
+    db_hashed = results[0]['pass'].decode('utf-8').rstrip('\x00')
+
+    if (not bcrypt.checkpw(passwd.encode('utf-8'),db_hashed.encode('utf-8'))):
+        return jsonify({'error':'Incorrect Password or User-ID'}),status.HTTP_401_UNAUTHORIZED
+
+
+    token = jwt.encode({'id': id, 'exp': datetime.datetime.utcnow(
     ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
-    return jsonify({'token': token})
+    return jsonify({'token': token}),status.HTTP_200_OK
 
+@app.route('/tmp')
+def temp():
+    password = b"password"
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password,salt)
+
+
+    cur = mysql.connection.cursor()
+    mysqlcommand = "UPDATE `weightlossgrapher`.`user` SET `pass` = %s WHERE `id` = 1;"
+    param = hashed
+    try:
+        cur.execute(mysqlcommand, (param,))
+        mysql.connection.commit()
+    except Exception as e:
+        mysql.connection.rollback()
+        return jsonify({'error': str(e)}),status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    return jsonify({'message': 'success'}),status.HTTP_200_OK
 
 if __name__ == '__main__':
     app.run(debug=True)
