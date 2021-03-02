@@ -33,9 +33,7 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
 
-        token = None
-        if 'x-access-token' in request.headers:
-            token = request.headers['x-access-token']
+        token = request.cookies.get('token')
 
         if not token:
             return jsonify({'message': 'Token is missing!'}), 401
@@ -310,8 +308,8 @@ def user():
             return create_user()
 
 
-@app.route('/login')
-def login():
+@app.route('/auth')
+def auth():
     auth = request.authorization
 
 
@@ -337,7 +335,11 @@ def login():
     token = jwt.encode({'id': id, 'exp': datetime.datetime.utcnow(
     ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
-    return jsonify({'token': token}),status.HTTP_200_OK
+    #return jsonify({'token': token}),status.HTTP_200_OK
+    resp = make_response(jsonify({'message':'Login Sucessful'}))
+    resp.set_cookie('token',token,httponly=True,secure=True)
+    #pdb.set_trace()
+    return resp,status.HTTP_200_OK
 
 @app.route('/tmp')
 def temp():
