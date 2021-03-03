@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, make_response
+from flask import Flask, render_template, request, make_response, url_for,redirect
 from flask_mysqldb import MySQL
 from flask_api import status
 from flask import jsonify
@@ -308,7 +308,7 @@ def user():
             return create_user()
 
 
-@app.route('/auth')
+@app.route('/auth',methods=['GET'])
 def auth():
     auth = request.authorization
 
@@ -340,6 +340,41 @@ def auth():
     resp.set_cookie('token',token,httponly=True,secure=True)
     #pdb.set_trace()
     return resp,status.HTTP_200_OK
+
+@app.route('/auth',methods=['POST'])
+def auth_and_redirect():
+        
+        
+    auth = request.form
+
+
+    cur = mysql.connection.cursor()
+    mysqlcommand = "SELECT pass FROM weightlossgrapher.user WHERE id = %s;"
+    id = auth['uname']
+    passwd = auth['psw']
+    try:
+        cur.execute(mysqlcommand, (id,))
+    except Exception as e:
+        # If this fails its likely an error related to connection to mysql or lack there of
+        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    fields = [i[0] for i in cur.description]
+    results = [dict(zip(fields, row)) for row in cur.fetchall()]
+    cur.close()
+    db_hashed = results[0]['pass'].decode('utf-8').rstrip('\x00')
+
+    if (not bcrypt.checkpw(passwd.encode('utf-8'),db_hashed.encode('utf-8'))):
+        return jsonify({'error':'Incorrect Password or User-ID'}),status.HTTP_401_UNAUTHORIZED
+
+
+    token = jwt.encode({'id': id, 'exp': datetime.datetime.utcnow(
+    ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
+
+    #return jsonify({'token': token}),status.HTTP_200_OK
+    resp = make_response(redirect('index'))
+    resp.set_cookie('token',token,httponly=True,secure=True)
+    #pdb.set_trace()
+    return resp,status.HTTP_302_FOUND
 
 @app.route('/tmp')
 def temp():
