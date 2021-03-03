@@ -361,6 +361,9 @@ def auth_and_redirect():
     fields = [i[0] for i in cur.description]
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
     cur.close()
+    if(results==[]):
+        return jsonify({'error':'Incorrect Password or User-ID'}),status.HTTP_401_UNAUTHORIZED
+
     db_hashed = results[0]['pass'].decode('utf-8').rstrip('\x00')
 
     if (not bcrypt.checkpw(passwd.encode('utf-8'),db_hashed.encode('utf-8'))):
@@ -372,7 +375,7 @@ def auth_and_redirect():
 
     #return jsonify({'token': token}),status.HTTP_200_OK
     resp = make_response(redirect('index'))
-    resp.set_cookie('token',token,httponly=True,secure=True)
+    resp.set_cookie('token',token,httponly=True,secure=True,samesite='Strict',max_age=datetime.timedelta(minutes=10))
     #pdb.set_trace()
     return resp,status.HTTP_302_FOUND
 
