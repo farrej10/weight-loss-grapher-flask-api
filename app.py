@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, make_response, url_for,redirect
+from flask import Flask, render_template, request, make_response, url_for, redirect
 from flask_mysqldb import MySQL
 from flask_api import status
 from flask import jsonify
@@ -41,7 +41,7 @@ def token_required(f):
             cur = mysql.connection.cursor()
             data = jwt.decode(
                 token, app.config['SECRET_KEY'], algorithms=['HS256'])
-            mysqlcommand = "SELECT * FROM weightlossgrapher.user WHERE id = %s;"
+            mysqlcommand = "SELECT id,name,admin FROM weightlossgrapher.user WHERE id = %s;"
             try:
                 cur.execute(mysqlcommand, (data['id'],))
             except Exception as e:
@@ -136,26 +136,38 @@ def get_weights_by_name(current_user, name, start, end):
 @token_required
 def create_weight_for_user(current_user, request):
 
-    # Check if request has json and has the two required fields
-    if not request.json or not 'user_id' in request.json or not 'weight' in request.json:
-        return jsonify(error="400 Bad Request"), status.HTTP_400_BAD_REQUEST
+    user_id = None
+    weight = None
+    ts = time.time()
+    timestamp = datetime.datetime.fromtimestamp(
+        ts).strftime('%Y-%m-%d %H:%M:%S')
+    
+    if(request.form != None):
+        data = request.form
+        user_id = current_user[0]
+        weight = data['weight']
+        timestamp = data['timestamp']
+    else:
+        # Check if request has json and has the two required fields
+        if not request.json or not 'user_id' in request.json or not 'weight' in request.json:
+            return jsonify(error="400 Bad Request"), status.HTTP_400_BAD_REQUEST
 
     # extract content + make timestamp
-    content = request.json
-    user_id = content['user_id']
-    weight = content['weight']
-    timestamp = None
+        content = request.json
+        user_id = content['user_id']
+        weight = content['weight']
+        if (not 'timestamp' in request.json):
+            ts = time.time()
+            timestamp = datetime.datetime.fromtimestamp(
+                ts).strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            timestamp = content['timestamp']
 
-    if (str(current_user[0]) != user_id and current_user[2] != 1):
+    if (current_user[0] != user_id and current_user[2] != 1):
         return jsonify(error="UNAUTHORIZED"), status.HTTP_401_UNAUTHORIZED
 
-    if (not 'timestamp' in request.json):
-        ts = time.time()
-        timestamp = datetime.datetime.fromtimestamp(
-            ts).strftime('%Y-%m-%d %H:%M:%S')
     # add the generated timestamp used for response
-    else:
-        timestamp = content['timestamp']
+    content = dict(user=user_id,timestamp=timestamp,weight=weight)
 
     cur = mysql.connection.cursor()
     try:
@@ -173,7 +185,7 @@ def create_weight_for_user(current_user, request):
 @token_required
 def get_users(current_user, id, name):
 
-    if(current_user[2] != 1):
+    if(current_user[2] != 1 and current_user[0] != id):
         return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
 
     cur = mysql.connection.cursor()
@@ -288,6 +300,7 @@ def user():
 
     if request.method == "GET":
         paramslist = list(request.args.to_dict().keys())
+
         if 'id' in paramslist:
             paramslist.remove('id')
         if 'name' in paramslist:
@@ -308,10 +321,17 @@ def user():
             return create_user()
 
 
-@app.route('/auth',methods=['GET'])
+@app.route('/current-user', methods=['GET'])
+@token_required
+def current_user(current_user):
+    user_info = dict(
+        id=current_user[0], name=current_user[1], admin=current_user[2])
+    return jsonify(user_info), status.HTTP_200_OK
+
+
+@app.route('/auth', methods=['GET'])
 def auth():
     auth = request.authorization
-
 
     cur = mysql.connection.cursor()
     mysqlcommand = "SELECT pass FROM weightlossgrapher.user WHERE id = %s;"
@@ -328,32 +348,28 @@ def auth():
     cur.close()
     db_hashed = results[0]['pass'].decode('utf-8').rstrip('\x00')
 
-    if (not bcrypt.checkpw(passwd.encode('utf-8'),db_hashed.encode('utf-8'))):
-        return jsonify({'error':'Incorrect Password or User-ID'}),status.HTTP_401_UNAUTHORIZED
-
+    if (not bcrypt.checkpw(passwd.encode('utf-8'), db_hashed.encode('utf-8'))):
+        return jsonify({'error': 'Incorrect Password or User-ID'}), status.HTTP_401_UNAUTHORIZED
 
     token = jwt.encode({'id': id, 'exp': datetime.datetime.utcnow(
     ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
-    #return jsonify({'token': token}),status.HTTP_200_OK
-    resp = make_response(jsonify({'message':'Login Sucessful'}))
-    resp.set_cookie('token',token,httponly=True,secure=True)
-    #pdb.set_trace()
-    return resp,status.HTTP_200_OK
+    resp = make_response(jsonify({'message': 'Login Sucessful'}))
+    resp.set_cookie('token', token, httponly=True, secure=True)
+    return resp, status.HTTP_200_OK
 
-@app.route('/auth',methods=['POST'])
+
+@app.route('/auth', methods=['POST'])
 def auth_and_redirect():
-        
-        
+
     auth = request.form
 
-
     cur = mysql.connection.cursor()
-    mysqlcommand = "SELECT pass FROM weightlossgrapher.user WHERE id = %s;"
-    id = auth['uname']
+    mysqlcommand = "SELECT pass,id FROM weightlossgrapher.user WHERE email = %s;"
+    email = auth['uname']
     passwd = auth['psw']
     try:
-        cur.execute(mysqlcommand, (id,))
+        cur.execute(mysqlcommand, (email,))
     except Exception as e:
         # If this fails its likely an error related to connection to mysql or lack there of
         return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -361,42 +377,40 @@ def auth_and_redirect():
     fields = [i[0] for i in cur.description]
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
     cur.close()
-    if(results==[]):
-        return jsonify({'error':'Incorrect Password or User-ID'}),status.HTTP_401_UNAUTHORIZED
+    if(results == []):
+        return jsonify({'error': 'Incorrect Password or User-ID'}), status.HTTP_401_UNAUTHORIZED
 
     db_hashed = results[0]['pass'].decode('utf-8').rstrip('\x00')
+    if (not bcrypt.checkpw(passwd.encode('utf-8'), db_hashed.encode('utf-8'))):
+        return jsonify({'error': 'Incorrect Password or User-ID'}), status.HTTP_401_UNAUTHORIZED
 
-    if (not bcrypt.checkpw(passwd.encode('utf-8'),db_hashed.encode('utf-8'))):
-        return jsonify({'error':'Incorrect Password or User-ID'}),status.HTTP_401_UNAUTHORIZED
-
-
-    token = jwt.encode({'id': id, 'exp': datetime.datetime.utcnow(
+    token = jwt.encode({'id': results[0]['id'], 'exp': datetime.datetime.utcnow(
     ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
-    #return jsonify({'token': token}),status.HTTP_200_OK
     resp = make_response(redirect('index'))
-    resp.set_cookie('token',token,httponly=True,secure=True,samesite='Strict',max_age=datetime.timedelta(minutes=10))
-    #pdb.set_trace()
-    return resp,status.HTTP_302_FOUND
+    resp.set_cookie('token', token, httponly=True, secure=True,
+                    samesite='Strict', max_age=datetime.timedelta(minutes=10))
+    return resp, status.HTTP_302_FOUND
+
 
 @app.route('/tmp')
 def temp():
     password = b"password"
     salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password,salt)
-
+    hashed = bcrypt.hashpw(password, salt)
 
     cur = mysql.connection.cursor()
-    mysqlcommand = "UPDATE `weightlossgrapher`.`user` SET `pass` = %s WHERE `id` = 1;"
+    mysqlcommand = "UPDATE `weightlossgrapher`.`user` SET `pass` = %s WHERE `id` = 4;"
     param = hashed
     try:
         cur.execute(mysqlcommand, (param,))
         mysql.connection.commit()
     except Exception as e:
         mysql.connection.rollback()
-        return jsonify({'error': str(e)}),status.HTTP_500_INTERNAL_SERVER_ERROR
+        return jsonify({'error': str(e)}), status.HTTP_500_INTERNAL_SERVER_ERROR
 
-    return jsonify({'message': 'success'}),status.HTTP_200_OK
+    return jsonify({'message': 'success'}), status.HTTP_200_OK
+
 
 if __name__ == '__main__':
     app.run(debug=True)
