@@ -1,11 +1,13 @@
-from flask import Flask, render_template, request, make_response, url_for, redirect
-from flask_mysqldb import MySQL
+from app import app
+from flask import render_template, request, make_response, url_for, redirect
+
 from flask_api import status
 from flask import jsonify
-from dotenv import load_dotenv
+
 import pdb
 import json
-import os
+import sys
+
 import time
 import datetime
 import jwt
@@ -14,7 +16,12 @@ from functools import wraps
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
-app = Flask(__name__)
+from dotenv import load_dotenv
+import os
+from flask_mysqldb import MySQL
+
+# authtoken
+mysql=None
 
 
 load_dotenv()
@@ -23,16 +30,13 @@ app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER')
 app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
 app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-
+print('sjdlkfjasdl;fjsadlkfaljds;fjas;ldkfja;slkdfjja;lsdkfjals;dfj')
 mysql = MySQL(app)
-
-# authtoken
 
 
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-
         token = request.cookies.get('token')
 
         if not token:
@@ -109,7 +113,6 @@ def get_weights_by_user(current_user, user_id, start, end):
 @token_required
 # return all weights for a user's name
 def get_weights_by_name(current_user, name, start, end):
-
     if(current_user[2] != 1):
         return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
 
@@ -332,7 +335,7 @@ def current_user(current_user):
 @app.route('/auth', methods=['GET'])
 def auth():
     auth = request.authorization
-
+    
     cur = mysql.connection.cursor()
     mysqlcommand = "SELECT pass FROM weightlossgrapher.user WHERE id = %s;"
     id = auth['username']
@@ -361,9 +364,8 @@ def auth():
 
 @app.route('/auth', methods=['POST'])
 def auth_and_redirect():
-
+    print(mysql, file=sys.stderr)
     auth = request.form
-
     cur = mysql.connection.cursor()
     mysqlcommand = "SELECT pass,id FROM weightlossgrapher.user WHERE email = %s;"
     email = auth['uname']
