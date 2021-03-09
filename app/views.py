@@ -364,7 +364,6 @@ def auth():
 
 @app.route('/auth', methods=['POST'])
 def auth_and_redirect():
-    print(mysql, file=sys.stderr)
     auth = request.form
     cur = mysql.connection.cursor()
     mysqlcommand = "SELECT pass,id FROM weightlossgrapher.user WHERE email = %s;"
