@@ -30,7 +30,7 @@ app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER')
 app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
 app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-print('sjdlkfjasdl;fjsadlkfaljds;fjas;ldkfja;slkdfjja;lsdkfjals;dfj')
+
 mysql = MySQL(app)
 
 
@@ -394,14 +394,14 @@ def auth_and_redirect():
     return resp, status.HTTP_302_FOUND
 
 
-@app.route('/tmp')
+#@app.route('/tmp')
 def temp():
-    password = b"password"
+    password = b"KWS4FOID9o"
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password, salt)
 
     cur = mysql.connection.cursor()
-    mysqlcommand = "UPDATE `weightlossgrapher`.`user` SET `pass` = %s WHERE `id` = 4;"
+    mysqlcommand = "UPDATE `weightlossgrapher`.`user` SET `pass` = %s WHERE `id` = 28;"
     param = hashed
     try:
         cur.execute(mysqlcommand, (param,))
