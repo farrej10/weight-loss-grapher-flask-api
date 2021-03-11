@@ -1,5 +1,5 @@
 from app import app
-from flask import render_template, request, make_response, url_for, redirect
+from flask import render_template, request, make_response, url_for, redirect, flash
 
 from flask_api import status
 from flask import jsonify
@@ -379,11 +379,11 @@ def auth_and_redirect():
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
     cur.close()
     if(results == []):
-        return jsonify({'error': 'Incorrect Password or User-ID'}), status.HTTP_401_UNAUTHORIZED
+        return redirect('login'), status.HTTP_302_FOUND
 
     db_hashed = results[0]['pass'].decode('utf-8').rstrip('\x00')
     if (not bcrypt.checkpw(passwd.encode('utf-8'), db_hashed.encode('utf-8'))):
-        return jsonify({'error': 'Incorrect Password or User-ID'}), status.HTTP_401_UNAUTHORIZED
+        return redirect('login'), status.HTTP_302_FOUND
 
     token = jwt.encode({'id': results[0]['id'], 'exp': datetime.datetime.utcnow(
     ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
