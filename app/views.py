@@ -274,7 +274,7 @@ def weights():
             'start', default='1970-01-01 12:00:00', type=str)
         now = datetime.datetime.fromtimestamp(
             time.time()).strftime('%Y-%m-%d %H:%M:%S')
-        end = request.args.get('end', default=now, type=str)
+        end = request.args.get('end', default='2050-01-01 12:00:00', type=str)
 
         if(end != now):
             end += " 23:59:59"
