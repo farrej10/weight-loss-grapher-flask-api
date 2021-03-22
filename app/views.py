@@ -195,13 +195,13 @@ def get_users(current_user, id, name):
     mysqlcommand = ""
     searchparam = ""
     if(id != None):
-        mysqlcommand = "SELECT * FROM weightlossgrapher.user WHERE id = %s;"
+        mysqlcommand = "SELECT id,name,admin,email FROM weightlossgrapher.user WHERE id = %s;"
         searchparam = id
     elif(name != None):
-        mysqlcommand = "SELECT * FROM weightlossgrapher.user WHERE name = %s;"
+        mysqlcommand = "SELECT id,name,admin,email FROM weightlossgrapher.user WHERE name = %s;"
         searchparam = name
     else:
-        mysqlcommand = "SELECT * FROM weightlossgrapher.user;"
+        mysqlcommand = "SELECT id,name,admin,email FROM weightlossgrapher.user;"
     try:
         if(searchparam == ""):
             cur.execute(mysqlcommand)
@@ -214,7 +214,6 @@ def get_users(current_user, id, name):
     fields = [i[0] for i in cur.description]
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
     cur.close()
-
     if(results):
         return jsonify({'users': results}), status.HTTP_200_OK
     else:
@@ -358,7 +357,7 @@ def auth():
     ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
     resp = make_response(jsonify({'message': 'Login Sucessful'}))
-    resp.set_cookie('token', token, httponly=True, secure=True)
+    resp.set_cookie('token', token)#, httponly=True, secure=True)
     return resp, status.HTTP_200_OK
 
 
