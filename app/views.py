@@ -296,21 +296,19 @@ def weights():
             return jsonify(error="400 Bad Request Unkown Parameters: \'{}\'".format('\', \''.join(paramslist))), status.HTTP_400_BAD_REQUEST
         return create_weight_for_user(request)
 
-
-@app.route('/user', methods=['GET', 'POST'])
-def user():
+@app.route('/user/',defaults={"id":None})
+@app.route('/user/<int:id>', methods=['GET', 'POST'])
+def user(id):
 
     if request.method == "GET":
         paramslist = list(request.args.to_dict().keys())
 
-        if 'id' in paramslist:
-            paramslist.remove('id')
         if 'name' in paramslist:
             paramslist.remove('name')
         if(paramslist):
             return jsonify(error="400 Bad Request Unkown Parameters: \'{}\'".format('\', \''.join(paramslist))), status.HTTP_400_BAD_REQUEST
         else:
-            user = request.args.get('id', default=None, type=str)
+            user = id
             name = request.args.get('name', default=None, type=str)
             return get_users(user, name)
 
