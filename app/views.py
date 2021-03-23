@@ -88,8 +88,8 @@ def get_weigths(current_user, start, end):  # Return weights table
 @token_required
 # Return all weights for a user
 def get_weights_by_user(current_user, user_id, start, end):
-
-    if (str(current_user[0]) != user_id):
+    
+    if (current_user[0] != user_id) and (current_user[2] != 1):
         return jsonify(error="UNAUTHORIZED"), status.HTTP_401_UNAUTHORIZED
     cur = mysql.connection.cursor()
     try:
@@ -267,7 +267,7 @@ def weights():
             paramslist.remove('end')
         if(paramslist):
             return jsonify(error="400 Bad Request Unkown Parameters: \'{}\'".format('\', \''.join(paramslist))), status.HTTP_400_BAD_REQUEST
-        user = request.args.get('user', default=None, type=str)
+        user = request.args.get('user', default=None, type=int)
         name = request.args.get('name', default=None, type=str)
         start = request.args.get(
             'start', default='1970-01-01 12:00:00', type=str)
@@ -319,6 +319,31 @@ def user(id):
             return jsonify(error="400 Bad Request Unkown Parameters: \'{}\'".format('\', \''.join(paramslist))), status.HTTP_400_BAD_REQUEST
         else:
             return create_user()
+
+@app.route('/user/<int:id>/weights', methods=['GET'])
+def weights_1(id):
+    paramslist = list(request.args.to_dict().keys())
+    if 'start' in paramslist:
+        paramslist.remove('start')
+    if 'end' in paramslist:
+        paramslist.remove('end')
+    if(paramslist):
+        return jsonify(error="400 Bad Request Unkown Parameters: \'{}\'".format('\', \''.join(paramslist))), status.HTTP_400_BAD_REQUEST
+    user = id
+    start = request.args.get(
+        'start', default='1970-01-01 12:00:00', type=str)
+    now = datetime.datetime.fromtimestamp(
+        time.time()).strftime('%Y-%m-%d %H:%M:%S')
+    end = request.args.get('end', default='2050-01-01 12:00:00', type=str)
+
+    if(end != now):
+        end += " 23:59:59"
+
+    if(start == end):
+        start += " 00:00:00"
+        end += " 23:59:59"
+    # user is unique therfore select based on that
+    return get_weights_by_user(user, start, end)
 
 
 @app.route('/current-user', methods=['GET'])
