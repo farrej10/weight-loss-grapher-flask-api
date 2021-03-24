@@ -1,5 +1,7 @@
 from app import app
 from flask import render_template, request, make_response, url_for, redirect, flash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from flask_api import status
 from flask import jsonify
@@ -23,6 +25,11 @@ from flask_mysqldb import MySQL
 # authtoken
 mysql=None
 
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 load_dotenv()
 app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST')
