@@ -380,7 +380,7 @@ def auth():
     ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
     resp = make_response(jsonify({'message': 'Login Sucessful'}))
-    resp.set_cookie('token', token)#, httponly=True, secure=True)
+    resp.set_cookie('token', token, httponly=True, secure=True)
     return resp, status.HTTP_200_OK
 
 
