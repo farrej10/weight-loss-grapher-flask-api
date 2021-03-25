@@ -1,6 +1,6 @@
 from app import app
 from flask import render_template, request, make_response, url_for, redirect, flash
-from flask_limiter import Limiter
+from flask_limiter import Limiter, HEADERS
 from flask_limiter.util import get_remote_address
 
 from flask_api import status
@@ -23,14 +23,20 @@ import os
 from flask_mysqldb import MySQL
 
 # authtoken
-mysql=None
+mysql = None
 
 limiter = Limiter(
     app,
     key_func=get_remote_address,
     storage_uri="redis://redis:6379",
+    headers_enabled=True,
     default_limits=["1000 per day", "50 per hour"]
 )
+limiter.header_mapping = {
+    HEADERS.LIMIT: "X-My-Limit",
+    HEADERS.RESET: "X-My-Reset",
+    HEADERS.REMAINING: "X-My-Remaining"
+}
 
 load_dotenv()
 app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST')
@@ -96,7 +102,7 @@ def get_weigths(current_user, start, end):  # Return weights table
 @token_required
 # Return all weights for a user
 def get_weights_by_user(current_user, user_id, start, end):
-    
+
     if (current_user[0] != user_id) and (current_user[2] != 1):
         return jsonify(error="UNAUTHORIZED"), status.HTTP_401_UNAUTHORIZED
     cur = mysql.connection.cursor()
@@ -152,7 +158,7 @@ def create_weight_for_user(current_user, request):
     ts = time.time()
     timestamp = datetime.datetime.fromtimestamp(
         ts).strftime('%Y-%m-%d %H:%M:%S')
-    
+
     if(request.form != None):
         data = request.form
         user_id = current_user[0]
@@ -178,7 +184,7 @@ def create_weight_for_user(current_user, request):
         return jsonify(error="UNAUTHORIZED"), status.HTTP_401_UNAUTHORIZED
 
     # add the generated timestamp used for response
-    content = dict(user=user_id,timestamp=timestamp,weight=weight)
+    content = dict(user=user_id, timestamp=timestamp, weight=weight)
 
     cur = mysql.connection.cursor()
     try:
@@ -304,7 +310,8 @@ def weights():
             return jsonify(error="400 Bad Request Unkown Parameters: \'{}\'".format('\', \''.join(paramslist))), status.HTTP_400_BAD_REQUEST
         return create_weight_for_user(request)
 
-@app.route('/user/',defaults={"id":None})
+
+@app.route('/user/', defaults={"id": None})
 @app.route('/user/<int:id>', methods=['GET', 'POST'])
 def user(id):
 
@@ -327,6 +334,7 @@ def user(id):
             return jsonify(error="400 Bad Request Unkown Parameters: \'{}\'".format('\', \''.join(paramslist))), status.HTTP_400_BAD_REQUEST
         else:
             return create_user()
+
 
 @app.route('/user/<int:id>/weights', methods=['GET'])
 def weights_1(id):
@@ -366,7 +374,7 @@ def current_user(current_user):
 @limiter.limit("20 per hour")
 def auth():
     auth = request.authorization
-    
+
     cur = mysql.connection.cursor()
     mysqlcommand = "SELECT pass FROM weightlossgrapher.user WHERE id = %s;"
     id = auth['username']
@@ -426,7 +434,7 @@ def auth_and_redirect():
     return resp, status.HTTP_302_FOUND
 
 
-#@app.route('/tmp')
+# @app.route('/tmp')
 def temp():
     password = b"KWS4FOID9o"
     salt = bcrypt.gensalt()
