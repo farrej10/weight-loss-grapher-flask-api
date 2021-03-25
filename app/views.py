@@ -28,7 +28,8 @@ mysql=None
 limiter = Limiter(
     app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
+    storage_uri="redis://redis:6379",
+    default_limits=["1000 per day", "50 per hour"]
 )
 
 load_dotenv()
@@ -362,6 +363,7 @@ def current_user(current_user):
 
 
 @app.route('/auth', methods=['GET'])
+@limiter.limit("20 per hour")
 def auth():
     auth = request.authorization
     
@@ -392,6 +394,7 @@ def auth():
 
 
 @app.route('/auth', methods=['POST'])
+@limiter.limit("20 per hour")
 def auth_and_redirect():
     auth = request.form
     cur = mysql.connection.cursor()
