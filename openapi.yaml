@@ -36,7 +36,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
-  /user/{id}:
+  /user/{userId}:
     get:
       security:
         - cookieAuth: []
@@ -49,7 +49,7 @@ paths:
         such as **bold**, *italic*, and [links](https://swagger.io).
       operationId: getUserById
       parameters:
-        - name: id
+        - name: userId
           in: path
           description: User ID
           required: true
@@ -63,6 +63,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+  /user/{userId}/weights:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - User
+      summary: Gets a user by ID.
+      description: >
+        A detailed description of the operation.
+        Use markdown for rich text representation,
+        such as **bold**, *italic*, and [links](https://swagger.io).
+      parameters:
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: start
+          schema:
+            type: string
+          description: This parameter allows filtering from that date.
+        - in: query
+          name: end
+          schema:
+            type: string
+          description: This parameter allows filtering till that date.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Weight'
   /current-user:
     get:
       security:
@@ -124,6 +162,15 @@ components:
           type: string
         admin:
           type: integer
+    Weight:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        timestamp:
+          type: string
+        weight:
+          type: number
   securitySchemes:
     cookieAuth:
       type: apiKey
