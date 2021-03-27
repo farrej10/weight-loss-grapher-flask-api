@@ -1,0 +1,131 @@
+openapi: 3.0.1
+info:
+  title: Weight-loss Grapher
+  description: >-
+    This API will allow my [weight-loss
+    website](https://github.com/farrej10/weight-loss-web-ui) to get data from a
+    MySQL database. It provides a simple RESTful api to interface with.
+  version: 1.0.0
+servers:
+  - url: 'https://weight.james-farrell.com/api'
+tags:
+  - name: User
+    description: Operations about user
+paths:
+  /user:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - User
+      summary: Gets all users.
+      description: "Must be an admin to perform this action, can be filtered by name."
+      operationId: getUserList
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: The name you wish to filter by.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+  /user/{id}:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - User
+      summary: Gets a user by ID.
+      description: >
+        A detailed description of the operation.
+        Use markdown for rich text representation,
+        such as **bold**, *italic*, and [links](https://swagger.io).
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /current-user:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - User
+      summary: Gets current user details
+      description: >
+        A detailed description of the operation.
+        Use markdown for rich text representation,
+        such as **bold**, *italic*, and [links](https://swagger.io).
+      operationId: getcurrentUser
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /weights:
+    get:
+      security:
+        - cookieAuth: []
+      responses:
+       '200':
+          description: OK
+          
+  /auth:
+    post:
+      summary: Logs in and returns the authentication  cookie
+      requestBody:
+        required: true
+        description: A JSON object containing the login and password.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      security: []    # no authentication
+      responses:
+        '200':
+          description: >
+            Successfully authenticated.
+            The session ID is returned in a cookie named `token`. You need to include this cookie in subsequent requests.
+          headers: 
+            Set-Cookie:
+              schema: 
+                type: string
+                example: token=abcde12345; Path=/; HttpOnly
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        admin:
+          type: integer
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
