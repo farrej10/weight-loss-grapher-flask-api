@@ -11,6 +11,8 @@ servers:
 tags:
   - name: User
     description: Operations about user
+  - name: Weights
+    description: Operations about Weights
 paths:
   /user:
     get:
@@ -69,7 +71,7 @@ paths:
         - cookieAuth: []
       tags:
         - User
-      summary: Gets a user by ID.
+      summary: Gets list of weights for user.
       description: >
         A detailed description of the operation.
         Use markdown for rich text representation,
@@ -107,7 +109,7 @@ paths:
         - cookieAuth: []
       tags:
         - User
-      summary: Gets current user details
+      summary: Gets current user details.
       description: >
         A detailed description of the operation.
         Use markdown for rich text representation,
@@ -124,9 +126,37 @@ paths:
     get:
       security:
         - cookieAuth: []
+      tags:
+        - Weights
+      summary: Gets all weights for all users.
+      parameters:
+        - in: query
+          name: user
+          schema:
+            type: string
+        - in: query
+          name: name
+          schema:
+            type: string
+        - in: query
+          name: start
+          schema:
+            type: string
+          description: This parameter allows filtering from that date.
+        - in: query
+          name: end
+          schema:
+            type: string
+          description: This parameter allows filtering till that date.
       responses:
-       '200':
-          description: OK
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Weight'
           
   /auth:
     post:
@@ -148,13 +178,13 @@ paths:
             Set-Cookie:
               schema: 
                 type: string
-                example: token=abcde12345; Path=/; HttpOnly
+                example: token=abcde12345; Secure; HttpOnly; Path=/
 components:
   schemas:
     User:
       type: object
       properties:
-        id:
+        user_id:
           type: integer
         name:
           type: string
