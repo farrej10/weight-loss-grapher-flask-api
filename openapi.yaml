@@ -159,6 +159,27 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Weight'
+    post:
+      summary: Creates a new weight for a user.
+      tags:
+        - Weights
+      requestBody:
+        required: true
+        description: A JSON object containing the login and password.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Weight'
+      security: []    # no authentication
+      responses:
+        '201':
+          description: >
+            After a successful creation the object is returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Weight'
+          
           
   /auth:
     post:
@@ -190,6 +211,11 @@ components:
   schemas:
     User:
       type: object
+      required:
+        - user_id
+        - name
+        - email
+        - admin
       properties:
         user_id:
           type: integer
@@ -200,6 +226,9 @@ components:
         admin:
           type: integer
     Weight:
+      required:
+        - user_id
+        - weight
       type: object
       properties:
         user_id:
