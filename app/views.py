@@ -229,7 +229,10 @@ def get_users(current_user, id, name):
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
     cur.close()
     if(results):
-        return jsonify({'users': results}), status.HTTP_200_OK
+        if (len(results) <= 1):
+            return jsonify(results[0]), status.HTTP_200_OK
+        else:
+            return jsonify(results), status.HTTP_200_OK
     else:
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
