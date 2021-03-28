@@ -59,9 +59,9 @@ def token_required(f):
             cur = mysql.connection.cursor()
             data = jwt.decode(
                 token, app.config['SECRET_KEY'], algorithms=['HS256'])
-            mysqlcommand = "SELECT id,name,admin FROM weightlossgrapher.user WHERE id = %s;"
+            mysqlcommand = "SELECT user_id,name,admin FROM weightlossgrapher.user WHERE user_id = %s;"
             try:
-                cur.execute(mysqlcommand, (data['id'],))
+                cur.execute(mysqlcommand, (data['user_id'],))
             except Exception as e:
                 # If this fails its likely an error related to connection to mysql or lack there of
                 return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -133,7 +133,7 @@ def get_weights_by_name(current_user, name, start, end):
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "SELECT user_id, name, CAST(timestamp AS CHAR(30)), weight FROM user t1 INNER JOIN weights t2 ON t1.id = t2.user_id WHERE name = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;", (name, start, end))
+            "SELECT user_id, name, CAST(timestamp AS CHAR(30)), weight FROM user t1 INNER JOIN weights t2 ON t1.user_id = t2.user_id WHERE name = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;", (name, start, end))
     except Exception as e:
         # Using 400 as its likely a bad request
         return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -209,13 +209,13 @@ def get_users(current_user, id, name):
     mysqlcommand = ""
     searchparam = ""
     if(id != None):
-        mysqlcommand = "SELECT id,name,admin,email FROM weightlossgrapher.user WHERE id = %s;"
+        mysqlcommand = "SELECT user_id,name,admin,email FROM weightlossgrapher.user WHERE user_id = %s;"
         searchparam = id
     elif(name != None):
-        mysqlcommand = "SELECT id,name,admin,email FROM weightlossgrapher.user WHERE name = %s;"
+        mysqlcommand = "SELECT user_id,name,admin,email FROM weightlossgrapher.user WHERE name = %s;"
         searchparam = name
     else:
-        mysqlcommand = "SELECT id,name,admin,email FROM weightlossgrapher.user;"
+        mysqlcommand = "SELECT user_id,name,admin,email FROM weightlossgrapher.user;"
     try:
         if(searchparam == ""):
             cur.execute(mysqlcommand)
@@ -256,7 +256,7 @@ def create_user(current_user):
         cur.execute(
             "INSERT INTO `weightlossgrapher`.`user` (`name`) VALUES (%s);", (name,))
         cur.execute(
-            "SELECT * FROM `weightlossgrapher`.`user` WHERE `id`= LAST_INSERT_ID()")
+            "SELECT * FROM `weightlossgrapher`.`user` WHERE `user_id`= LAST_INSERT_ID()")
         mysql.connection.commit()
     except Exception as e:
         mysql.connection.rollback()
@@ -379,7 +379,7 @@ def auth():
     auth = request.authorization
 
     cur = mysql.connection.cursor()
-    mysqlcommand = "SELECT pass FROM weightlossgrapher.user WHERE id = %s;"
+    mysqlcommand = "SELECT pass FROM weightlossgrapher.user WHERE user_id = %s;"
     id = auth['username']
     passwd = auth['password']
     try:
@@ -396,7 +396,7 @@ def auth():
     if (not bcrypt.checkpw(passwd.encode('utf-8'), db_hashed.encode('utf-8'))):
         return jsonify({'error': 'Incorrect Password or User-ID'}), status.HTTP_401_UNAUTHORIZED
 
-    token = jwt.encode({'id': id, 'exp': datetime.datetime.utcnow(
+    token = jwt.encode({'user_id': id, 'exp': datetime.datetime.utcnow(
     ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
     resp = make_response(jsonify({'message': 'Login Sucessful'}))
@@ -409,7 +409,7 @@ def auth():
 def auth_and_redirect():
     auth = request.form
     cur = mysql.connection.cursor()
-    mysqlcommand = "SELECT pass,id FROM weightlossgrapher.user WHERE email = %s;"
+    mysqlcommand = "SELECT pass,user_id FROM weightlossgrapher.user WHERE email = %s;"
     email = auth['uname']
     passwd = auth['psw']
     try:
@@ -428,7 +428,7 @@ def auth_and_redirect():
     if (not bcrypt.checkpw(passwd.encode('utf-8'), db_hashed.encode('utf-8'))):
         return redirect('login'), status.HTTP_302_FOUND
 
-    token = jwt.encode({'id': results[0]['id'], 'exp': datetime.datetime.utcnow(
+    token = jwt.encode({'user_id': results[0]['user_id'], 'exp': datetime.datetime.utcnow(
     ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
     resp = make_response(redirect('index'))
@@ -444,7 +444,7 @@ def temp():
     hashed = bcrypt.hashpw(password, salt)
 
     cur = mysql.connection.cursor()
-    mysqlcommand = "UPDATE `weightlossgrapher`.`user` SET `pass` = %s WHERE `id` = 28;"
+    mysqlcommand = "UPDATE `weightlossgrapher`.`user` SET `pass` = %s WHERE `user_id` = 28;"
     param = hashed
     try:
         cur.execute(mysqlcommand, (param,))
