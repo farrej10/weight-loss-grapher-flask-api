@@ -400,7 +400,8 @@ def auth():
     ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
     resp = make_response(jsonify({'message': 'Login Sucessful'}))
-    resp.set_cookie('token', token, httponly=True, secure=True)
+    resp.set_cookie('token', token, httponly=True, secure=True,
+                    samesite='Strict', max_age=datetime.timedelta(minutes=10))
     return resp, status.HTTP_200_OK
 
 
@@ -410,34 +411,64 @@ def auth_and_redirect():
     auth = request.form
     cur = mysql.connection.cursor()
     mysqlcommand = "SELECT pass,user_id FROM weightlossgrapher.user WHERE email = %s;"
-    email = auth['uname']
-    passwd = auth['psw']
-    try:
-        cur.execute(mysqlcommand, (email,))
-    except Exception as e:
-        # If this fails its likely an error related to connection to mysql or lack there of
-        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+    if (request.form.get('uname', None) != None):
+        email = auth['uname']
+        passwd = auth['psw']
+        try:
+            cur.execute(mysqlcommand, (email,))
+        except Exception as e:
+            # If this fails its likely an error related to connection to mysql or lack there of
+            return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
 
-    fields = [i[0] for i in cur.description]
-    results = [dict(zip(fields, row)) for row in cur.fetchall()]
-    cur.close()
-    if(results == []):
-        return redirect('login'), status.HTTP_302_FOUND
+        fields = [i[0] for i in cur.description]
+        results = [dict(zip(fields, row)) for row in cur.fetchall()]
+        cur.close()
+        if(results == []):
+            return redirect('login'), status.HTTP_302_FOUND
 
-    db_hashed = results[0]['pass'].decode('utf-8').rstrip('\x00')
-    if (not bcrypt.checkpw(passwd.encode('utf-8'), db_hashed.encode('utf-8'))):
-        return redirect('login'), status.HTTP_302_FOUND
+        db_hashed = results[0]['pass'].decode('utf-8').rstrip('\x00')
+        if (not bcrypt.checkpw(passwd.encode('utf-8'), db_hashed.encode('utf-8'))):
+            return redirect('login'), status.HTTP_302_FOUND
 
-    token = jwt.encode({'user_id': results[0]['user_id'], 'exp': datetime.datetime.utcnow(
-    ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
+        token = jwt.encode({'user_id': results[0]['user_id'], 'exp': datetime.datetime.utcnow(
+        ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
 
-    resp = make_response(redirect('index'))
-    resp.set_cookie('token', token, httponly=True, secure=True,
-                    samesite='Strict', max_age=datetime.timedelta(minutes=10))
-    return resp, status.HTTP_302_FOUND
+        resp = make_response(redirect('index'))
+        resp.set_cookie('token', token, httponly=True, secure=True,
+                        samesite='Strict', max_age=datetime.timedelta(minutes=10))
+        return resp, status.HTTP_302_FOUND
+    else:
+        if not request.json or not 'email' in request.json or not 'pass' in request.json:
+            return jsonify(error="400 Bad Request"), status.HTTP_400_BAD_REQUEST
+        content = request.json
+        email = content['email']
+        passwd = content['pass']
+        try:
+            cur.execute(mysqlcommand, (email,))
+        except Exception as e:
+            # If this fails its likely an error related to connection to mysql or lack there of
+            return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
 
+        fields = [i[0] for i in cur.description]
+        results = [dict(zip(fields, row)) for row in cur.fetchall()]
+        cur.close()
+        if(results == []):
+            return jsonify({'error': 'Incorrect Password or User-ID'}), status.HTTP_401_UNAUTHORIZED
+
+        db_hashed = results[0]['pass'].decode('utf-8').rstrip('\x00')
+        if (not bcrypt.checkpw(passwd.encode('utf-8'), db_hashed.encode('utf-8'))):
+            return jsonify({'error': 'Incorrect Password or User-ID'}), status.HTTP_401_UNAUTHORIZED
+
+        token = jwt.encode({'user_id': results[0]['user_id'], 'exp': datetime.datetime.utcnow(
+        ) + datetime.timedelta(minutes=10)}, app.config['SECRET_KEY'], algorithm='HS256')
+        resp = make_response(jsonify({'message': 'Login Sucessful'}))
+        resp.set_cookie('token', token, httponly=True, secure=True,
+                        samesite='Strict', max_age=datetime.timedelta(minutes=10))
+        return resp, status.HTTP_200_OK
 
 # @app.route('/tmp')
+
+
 def temp():
     password = b"KWS4FOID9o"
     salt = bcrypt.gensalt()
