@@ -38,7 +38,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
-  /user/{userId}:
+  /user/{user_id}:
     get:
       security:
         - cookieAuth: []
@@ -51,7 +51,7 @@ paths:
         such as **bold**, *italic*, and [links](https://swagger.io).
       operationId: getUserById
       parameters:
-        - name: userId
+        - name: user_id
           in: path
           description: User ID
           required: true
@@ -65,7 +65,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-  /user/{userId}/weights:
+  /user/{user_id}/weights:
     get:
       security:
         - cookieAuth: []
@@ -77,7 +77,7 @@ paths:
         Use markdown for rich text representation,
         such as **bold**, *italic*, and [links](https://swagger.io).
       parameters:
-        - name: userId
+        - name: user_id
           in: path
           description: User ID
           required: true
@@ -131,13 +131,15 @@ paths:
       summary: Gets all weights for all users.
       parameters:
         - in: query
-          name: user
+          name: user_id
           schema:
-            type: string
+            type: integer
+          description: This parameter allows filtering by user_id.
         - in: query
           name: name
           schema:
             type: string
+          description: This parameter allows filtering by name of user.
         - in: query
           name: start
           schema:
@@ -167,7 +169,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              type: object
+              properties:
+               email: 
+                type: string
+               pass: 
+                type: string
       security: []    # no authentication
       responses:
         '200':
@@ -206,3 +213,6 @@ components:
       type: apiKey
       in: cookie
       name: token
+    basicAuth:     # <-- arbitrary name for the security scheme
+      type: http
+      scheme: basic
