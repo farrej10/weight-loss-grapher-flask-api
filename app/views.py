@@ -44,7 +44,9 @@ app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER')
 app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD')
 app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['JSON_SORT_KEYS'] = False
 
+websitepath=os.environ.get('WEBPATH')
 mysql = MySQL(app)
 
 
@@ -159,7 +161,7 @@ def create_weight_for_user(current_user, request):
     timestamp = datetime.datetime.fromtimestamp(
         ts).strftime('%Y-%m-%d %H:%M:%S')
 
-    if(request.form.get('user_id',None) != None):
+    if(request.form.get('user_id', None) != None):
         data = request.form
         user_id = current_user[0]
         weight = data['weight']
@@ -312,6 +314,33 @@ def weights():
         if(paramslist):
             return jsonify(error="400 Bad Request Unkown Parameters: \'{}\'".format('\', \''.join(paramslist))), status.HTTP_400_BAD_REQUEST
         return create_weight_for_user(request)
+
+
+@app.route('/user/<int:id>/weights/<string:timestamp>', methods=['GET'])
+@token_required
+def exactweight(current_user, id, timestamp):
+    if(current_user[2] != 1 and current_user[0] != id):
+        return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
+
+    cur = mysql.connection.cursor()
+    mysqlcommand = "SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s AND timestamp = %s;"
+    try:
+        cur.execute(mysqlcommand, (id, timestamp))
+    except Exception as e:
+        # If this fails its likely an error related to connection to mysql or lack there of
+        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    fields = [i[0] for i in cur.description]
+    fields[1] = 'timestamp'  # change field name
+    results = [dict(zip(fields, row)) for row in cur.fetchall()]
+    cur.close()
+    links = "{path}/user/{id}/weights/{timestamp}"
+    link = links.format(path=websitepath,id=id, timestamp=timestamp)
+    if(results):
+            results[0]['_links'] = {'self': {'href':link}}
+            return jsonify(results[0]), status.HTTP_200_OK
+    else:
+        return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
 
 @app.route('/user/', defaults={"id": None})
