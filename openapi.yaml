@@ -13,6 +13,8 @@ tags:
     description: Operations about user
   - name: Weights
     description: Operations about Weights
+  - name: Auth
+    description: Methods of Auth
 paths:
   /user:
     get:
@@ -194,8 +196,10 @@ paths:
               properties:
                email: 
                 type: string
+                example: test@test.com
                pass: 
                 type: string
+                example: KWS4FOID9o
       security: []    # no authentication
       responses:
         '200':
@@ -219,12 +223,16 @@ components:
       properties:
         user_id:
           type: integer
+          example: 28
         name:
           type: string
+          example: Test User
         email:
           type: string
+          example: test@test.com
         admin:
           type: integer
+          example: 0
     Weight:
       required:
         - user_id
@@ -233,10 +241,13 @@ components:
       properties:
         user_id:
           type: integer
+          example: 28
         timestamp:
           type: string
+          example: "2021-03-28"
         weight:
           type: number
+          example: 78.8
   securitySchemes:
     cookieAuth:
       type: apiKey

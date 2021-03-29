@@ -159,7 +159,7 @@ def create_weight_for_user(current_user, request):
     timestamp = datetime.datetime.fromtimestamp(
         ts).strftime('%Y-%m-%d %H:%M:%S')
 
-    if(request.form != None):
+    if(request.form.get('user_id',None) != None):
         data = request.form
         user_id = current_user[0]
         weight = data['weight']
