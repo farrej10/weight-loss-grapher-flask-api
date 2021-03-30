@@ -158,7 +158,7 @@ def get_weights_by_name(current_user, name, start, end):
 
     cur = mysql.connection.cursor()
     try:
-        sql = """SELECT DISTINCT(`user`.`user_id`), name, CAST(timestamp AS CHAR(30)), weight FROM user t1 INNER JOIN weights t2 ON t1.user_id = t2.user_id WHERE name = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;"""
+        sql = """SELECT t1.user_id, name, CAST(timestamp AS CHAR(30)), weight FROM user t1 INNER JOIN weights t2 ON t1.user_id = t2.user_id WHERE name = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;"""
         cur.execute(sql, (name, start, end))
     except Exception as e:
         # Using 400 as its likely a bad request
@@ -232,6 +232,11 @@ def create_weight_for_user(current_user, request):
         return jsonify(error=str(e)), status.HTTP_400_BAD_REQUEST
 
     cur.close()
+
+    links = "{path}/user/{id}/weights/{time}"
+    link = links.format(
+                path=websitepath, id=user_id, time=timestamp.replace(" ", "T"))
+    content['_links'] = {'self': {'href': link}}
     return jsonify(content), status.HTTP_201_CREATED
 
 
@@ -287,19 +292,26 @@ def create_user(current_user):
         return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
 
     # Check if request has json and has the two required fields
-    if not request.json or not 'name' in request.json:
+    if not request.json or not 'name' in request.json or not 'email' in request.json or not 'pass' in request.json or not 'admin' in request.json:
         return jsonify(error="400 Bad Request"), status.HTTP_400_BAD_REQUEST
 
-    # extract content + make timestamp
+    # extract content
     content = request.json
     name = content['name']
+    email = content['email']
+    pwd = content['pass']
+    admin = content['admin']
+
+    password = str.encode(pwd)
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password, salt)
 
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "INSERT INTO `weightlossgrapher`.`user` (`name`) VALUES (%s);", (name,))
+            "INSERT INTO `weightlossgrapher`.`user` (`name`,`email`,`pass`,`admin`) VALUES (%s,%s,%s,%s);", (name,email,hashed,admin))
         cur.execute(
-            "SELECT * FROM `weightlossgrapher`.`user` WHERE `user_id`= LAST_INSERT_ID()")
+            "SELECT user_id,name,admin,email FROM `weightlossgrapher`.`user` WHERE `user_id`= LAST_INSERT_ID()")
         mysql.connection.commit()
     except Exception as e:
         mysql.connection.rollback()
@@ -309,7 +321,10 @@ def create_user(current_user):
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
 
     cur.close()
-    return jsonify(results), status.HTTP_201_CREATED
+    links = "{path}/user/{id}"
+    link = links.format(path=websitepath, id=results[0]['user_id'])
+    results[0]['_links'] = {'self': {'href': link}}
+    return jsonify(results[0]), status.HTTP_201_CREATED
 
 
 @app.route('/weights', methods=['GET', 'POST'])
@@ -384,7 +399,7 @@ def exactweight(current_user, id, timestamp):
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
 
-@app.route('/user/', defaults={"id": None})
+@app.route('/user', defaults={"id": None},methods=['GET', 'POST'])
 @app.route('/user/<int:id>', methods=['GET', 'POST'])
 def user(id):
 
@@ -458,9 +473,13 @@ def auth():
         # If this fails its likely an error related to connection to mysql or lack there of
         return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
 
+    
     fields = [i[0] for i in cur.description]
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
     cur.close()
+    if(results == []):
+        return jsonify({'error': 'Incorrect Password or User-ID'}), status.HTTP_401_UNAUTHORIZED
+
     db_hashed = results[0]['pass'].decode('utf-8').rstrip('\x00')
 
     if (not bcrypt.checkpw(passwd.encode('utf-8'), db_hashed.encode('utf-8'))):
@@ -473,6 +492,7 @@ def auth():
     resp.set_cookie('token', token, httponly=True, secure=True,
                     samesite='Strict', max_age=datetime.timedelta(minutes=10))
     return resp, status.HTTP_200_OK
+
 
 
 @app.route('/auth', methods=['POST'])
