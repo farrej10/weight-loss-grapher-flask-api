@@ -46,7 +46,7 @@ app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['JSON_SORT_KEYS'] = False
 
-websitepath=os.environ.get('WEBPATH')
+websitepath = os.environ.get('WEBPATH')
 mysql = MySQL(app)
 
 
@@ -96,9 +96,19 @@ def get_weigths(current_user, start, end):  # Return weights table
     cur.close()
 
     if(results):
-        return jsonify(results), status.HTTP_200_OK
-    else:
-        return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
+        links = "{path}/user/{id}/weights/{time}"
+        if (len(results) <= 1):
+            link = links.format(
+                path=websitepath, id=results[0]['timestamp'], time=results[0]['timestamp'].replace(" ", "T"))
+            results[0]['_links'] = {'self': {'href': link}}
+            return jsonify(results[0]), status.HTTP_200_OK
+            return jsonify(results[0]), status.HTTP_200_OK
+        else:
+            for idc, i in enumerate(results):
+                link = links.format(
+                    path=websitepath, id=i['user_id'], time=results[idc]['timestamp'].replace(" ", "T"))
+                results[idc]['_links'] = {'self': {'href': link}}
+            return jsonify(results), status.HTTP_200_OK
 
 
 @token_required
@@ -121,6 +131,20 @@ def get_weights_by_user(current_user, user_id, start, end):
     cur.close()
 
     if(results):
+        links = "{path}/user/{id}/weights/{time}"
+        if (len(results) <= 1):
+            link = links.format(path=websitepath, id=user_id,
+                                time=results[0]['timestamp'].replace(" ", "T"))
+            results[0]['_links'] = {'self': {'href': link}}
+            return jsonify(results[0]), status.HTTP_200_OK
+            return jsonify(results[0]), status.HTTP_200_OK
+        else:
+            for idc, i in enumerate(results):
+                link = links.format(
+                    path=websitepath, id=i['user_id'], time=results[idc]['timestamp'].replace(" ", "T"))
+                results[idc]['_links'] = {'self': {'href': link}}
+            return jsonify(results), status.HTTP_200_OK
+
         return jsonify(results), status.HTTP_200_OK
     else:
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
@@ -134,8 +158,8 @@ def get_weights_by_name(current_user, name, start, end):
 
     cur = mysql.connection.cursor()
     try:
-        cur.execute(
-            "SELECT user_id, name, CAST(timestamp AS CHAR(30)), weight FROM user t1 INNER JOIN weights t2 ON t1.user_id = t2.user_id WHERE name = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;", (name, start, end))
+        sql = """SELECT DISTINCT(`user`.`user_id`), name, CAST(timestamp AS CHAR(30)), weight FROM user t1 INNER JOIN weights t2 ON t1.user_id = t2.user_id WHERE name = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;"""
+        cur.execute(sql, (name, start, end))
     except Exception as e:
         # Using 400 as its likely a bad request
         return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -146,9 +170,19 @@ def get_weights_by_name(current_user, name, start, end):
     cur.close()
 
     if(results):
-        return jsonify(results), status.HTTP_200_OK
-    else:
-        return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
+        links = "{path}/user/{id}/weights/{time}"
+        if (len(results) <= 1):
+            link = links.format(
+                path=websitepath, id=results[0]['timestamp'], time=results[0]['timestamp'].replace(" ", "T"))
+            results[0]['_links'] = {'self': {'href': link}}
+            return jsonify(results[0]), status.HTTP_200_OK
+            return jsonify(results[0]), status.HTTP_200_OK
+        else:
+            for idc, i in enumerate(results):
+                link = links.format(
+                    path=websitepath, id=i['user_id'], time=results[idc]['timestamp'].replace(" ", "T"))
+                results[idc]['_links'] = {'self': {'href': link}}
+            return jsonify(results), status.HTTP_200_OK
 
 
 # Create a weight entry for a user
@@ -231,9 +265,16 @@ def get_users(current_user, id, name):
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
     cur.close()
     if(results):
+        links = "{path}/user/{id}"
         if (len(results) <= 1):
+            link = links.format(path=websitepath, id=id)
+            results[0]['_links'] = {'self': {'href': link}}
+            return jsonify(results[0]), status.HTTP_200_OK
             return jsonify(results[0]), status.HTTP_200_OK
         else:
+            for idc, i in enumerate(results):
+                link = links.format(path=websitepath, id=i['user_id'])
+                results[idc]['_links'] = {'self': {'href': link}}
             return jsonify(results), status.HTTP_200_OK
     else:
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
@@ -335,10 +376,10 @@ def exactweight(current_user, id, timestamp):
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
     cur.close()
     links = "{path}/user/{id}/weights/{timestamp}"
-    link = links.format(path=websitepath,id=id, timestamp=timestamp)
+    link = links.format(path=websitepath, id=id, timestamp=timestamp)
     if(results):
-            results[0]['_links'] = {'self': {'href':link}}
-            return jsonify(results[0]), status.HTTP_200_OK
+        results[0]['_links'] = {'self': {'href': link}}
+        return jsonify(results[0]), status.HTTP_200_OK
     else:
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
