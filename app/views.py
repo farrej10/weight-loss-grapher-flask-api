@@ -66,7 +66,7 @@ def token_required(f):
                 cur.execute(mysqlcommand, (data['user_id'],))
             except Exception as e:
                 # If this fails its likely an error related to connection to mysql or lack there of
-                return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+                return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
             current_user = cur.fetchone()
         except:
             return jsonify({'error': 'Token Expired'}), status.HTTP_401_UNAUTHORIZED
@@ -88,7 +88,7 @@ def get_weigths(current_user, start, end):  # Return weights table
             "SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE timestamp BETWEEN  %s AND %s ORDER BY timestamp;", (start, end))
     except Exception as e:
         # If this fails its likely an error related to connection to mysql or lack there of
-        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+        return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
 
     fields = [i[0] for i in cur.description]
     fields[1] = 'timestamp'  # change field name
@@ -123,7 +123,7 @@ def get_weights_by_user(current_user, user_id, start, end):
             "SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s AND timestamp BETWEEN  %s AND %s ORDER BY timestamp;", (user_id, start, end))
     except Exception as e:
         # Using 400 as its likely a bad request
-        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+        return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
 
     fields = [i[0] for i in cur.description]
     fields[1] = 'timestamp'  # change field name
@@ -162,7 +162,7 @@ def get_weights_by_name(current_user, name, start, end):
         cur.execute(sql, (name, start, end))
     except Exception as e:
         # Using 400 as its likely a bad request
-        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+        return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
 
     fields = [i[0] for i in cur.description]
     fields[2] = 'timestamp'  # change field name
@@ -264,7 +264,7 @@ def get_users(current_user, id, name):
             cur.execute(mysqlcommand, (searchparam,))
     except Exception as e:
         # If this fails its likely an error related to connection to mysql or lack there of
-        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+        return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
 
     fields = [i[0] for i in cur.description]
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
@@ -384,7 +384,7 @@ def exactweight(current_user, id, timestamp):
         cur.execute(mysqlcommand, (id, timestamp))
     except Exception as e:
         # If this fails its likely an error related to connection to mysql or lack there of
-        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+        return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
 
     fields = [i[0] for i in cur.description]
     fields[1] = 'timestamp'  # change field name
@@ -471,7 +471,7 @@ def auth():
         cur.execute(mysqlcommand, (id,))
     except Exception as e:
         # If this fails its likely an error related to connection to mysql or lack there of
-        return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+        return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
 
     
     fields = [i[0] for i in cur.description]
@@ -508,7 +508,7 @@ def auth_and_redirect():
             cur.execute(mysqlcommand, (email,))
         except Exception as e:
             # If this fails its likely an error related to connection to mysql or lack there of
-            return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+            return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
 
         fields = [i[0] for i in cur.description]
         results = [dict(zip(fields, row)) for row in cur.fetchall()]
@@ -537,7 +537,7 @@ def auth_and_redirect():
             cur.execute(mysqlcommand, (email,))
         except Exception as e:
             # If this fails its likely an error related to connection to mysql or lack there of
-            return jsonify(error=str(e)), status.HTTP_500_INTERNAL_SERVER_ERROR
+            return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
 
         fields = [i[0] for i in cur.description]
         results = [dict(zip(fields, row)) for row in cur.fetchall()]
@@ -572,7 +572,7 @@ def temp():
         mysql.connection.commit()
     except Exception as e:
         mysql.connection.rollback()
-        return jsonify({'error': str(e)}), status.HTTP_500_INTERNAL_SERVER_ERROR
+        return jsonify({'error': str(e[0])}), status.HTTP_500_INTERNAL_SERVER_ERROR
 
     return jsonify({'message': 'success'}), status.HTTP_200_OK
 
