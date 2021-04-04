@@ -452,7 +452,7 @@ def weights_1(id):
 
 @app.route('/user/<int:id>/weights/<string:timestamp>', methods=['DELETE'])
 @token_required
-def Deleteexactweight(current_user, id, timestamp):
+def deleteExactWeight(current_user, id, timestamp):
     if(current_user[2] != 1 and current_user[0] != id):
         return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
 
@@ -482,6 +482,36 @@ def Deleteexactweight(current_user, id, timestamp):
     else:
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
+@app.route('/user/<int:id>', methods=['DELETE'])
+@token_required
+def deleteUser(current_user, id):
+    if(current_user[2] != 1 and current_user[0] != id):
+        return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
+
+    cur = mysql.connection.cursor()
+    mysqlcommand = """SELECT user_id,name FROM weightlossgrapher.user WHERE user_id = %s;"""
+    try:
+        cur.execute(mysqlcommand, (id,))
+    except Exception as e:
+        # If this fails its likely an error related to connection to mysql or lack there of
+        return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    fields = [i[0] for i in cur.description]
+    results = [dict(zip(fields, row)) for row in cur.fetchall()]
+    cur.close()
+    if(results):
+        cur = mysql.connection.cursor()
+        mysqlcommand = """DELETE FROM user WHERE user_id = %s;"""
+        try:
+            cur.execute(mysqlcommand, (id, ))
+            mysql.connection.commit()
+        except Exception as e:
+            # If this fails its likely an error related to connection to mysql or lack there of
+            return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
+        cur.close()
+        return jsonify(message="Successfully Deleted"), status.HTTP_200_OK
+    else:
+        return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
 @app.route('/current-user', methods=['GET'])
 @token_required
