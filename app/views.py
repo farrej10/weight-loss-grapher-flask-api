@@ -235,7 +235,7 @@ def create_weight_for_user(current_user, request):
 
     links = "{path}/user/{id}/weights/{time}"
     link = links.format(
-                path=websitepath, id=user_id, time=timestamp.replace(" ", "T"))
+        path=websitepath, id=user_id, time=timestamp.replace(" ", "T"))
     content['_links'] = {'self': {'href': link}}
     return jsonify(content), status.HTTP_201_CREATED
 
@@ -309,7 +309,7 @@ def create_user(current_user):
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "INSERT INTO `weightlossgrapher`.`user` (`name`,`email`,`pass`,`admin`) VALUES (%s,%s,%s,%s);", (name,email,hashed,admin))
+            "INSERT INTO `weightlossgrapher`.`user` (`name`,`email`,`pass`,`admin`) VALUES (%s,%s,%s,%s);", (name, email, hashed, admin))
         cur.execute(
             "SELECT user_id,name,admin,email FROM `weightlossgrapher`.`user` WHERE `user_id`= LAST_INSERT_ID()")
         mysql.connection.commit()
@@ -399,7 +399,7 @@ def exactweight(current_user, id, timestamp):
         return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
 
 
-@app.route('/user', defaults={"id": None},methods=['GET', 'POST'])
+@app.route('/user', defaults={"id": None}, methods=['GET', 'POST'])
 @app.route('/user/<int:id>', methods=['GET', 'POST'])
 def user(id):
 
@@ -450,6 +450,39 @@ def weights_1(id):
     return get_weights_by_user(user, start, end)
 
 
+@app.route('/user/<int:id>/weights/<string:timestamp>', methods=['DELETE'])
+@token_required
+def Deleteexactweight(current_user, id, timestamp):
+    if(current_user[2] != 1 and current_user[0] != id):
+        return jsonify({'error': 'Not Admin'}), status.HTTP_401_UNAUTHORIZED
+
+    cur = mysql.connection.cursor()
+    mysqlcommand = "SELECT user_id,CAST(timestamp AS CHAR(30)),weight FROM weightlossgrapher.weights WHERE user_id = %s AND timestamp = %s;"
+    try:
+        cur.execute(mysqlcommand, (id, timestamp))
+    except Exception as e:
+        # If this fails its likely an error related to connection to mysql or lack there of
+        return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    fields = [i[0] for i in cur.description]
+    fields[1] = 'timestamp'  # change field name
+    results = [dict(zip(fields, row)) for row in cur.fetchall()]
+    cur.close()
+    if(results):
+        cur = mysql.connection.cursor()
+        mysqlcommand = "DELETE FROM weights WHERE user_id = %s AND timestamp = %s;"
+        try:
+            cur.execute(mysqlcommand, (id, timestamp))
+            mysql.connection.commit()
+        except Exception as e:
+            # If this fails its likely an error related to connection to mysql or lack there of
+            return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
+        cur.close()
+        return jsonify(message="Successfully Deleted"), status.HTTP_200_OK
+    else:
+        return jsonify(error="Not Found"), status.HTTP_404_NOT_FOUND
+
+
 @app.route('/current-user', methods=['GET'])
 @token_required
 def current_user(current_user):
@@ -473,7 +506,6 @@ def auth():
         # If this fails its likely an error related to connection to mysql or lack there of
         return jsonify(error=str(e[0])), status.HTTP_500_INTERNAL_SERVER_ERROR
 
-    
     fields = [i[0] for i in cur.description]
     results = [dict(zip(fields, row)) for row in cur.fetchall()]
     cur.close()
@@ -492,7 +524,6 @@ def auth():
     resp.set_cookie('token', token, httponly=True, secure=True,
                     samesite='Strict', max_age=datetime.timedelta(minutes=10))
     return resp, status.HTTP_200_OK
-
 
 
 @app.route('/auth', methods=['POST'])
