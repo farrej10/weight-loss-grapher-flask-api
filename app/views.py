@@ -61,7 +61,7 @@ def token_required(f):
             cur = mysql.connection.cursor()
             data = jwt.decode(
                 token, app.config['SECRET_KEY'], algorithms=['HS256'])
-            mysqlcommand = "SELECT user_id,name,admin FROM weightlossgrapher.user WHERE user_id = %s;"
+            mysqlcommand = "SELECT user_id,name,admin,email FROM weightlossgrapher.user WHERE user_id = %s;"
             try:
                 cur.execute(mysqlcommand, (data['user_id'],))
             except Exception as e:
@@ -517,7 +517,10 @@ def deleteUser(current_user, id):
 @token_required
 def current_user(current_user):
     user_info = dict(
-        id=current_user[0], name=current_user[1], admin=current_user[2])
+        id=current_user[0], name=current_user[1], admin=current_user[2],email=current_user[3])
+    links = "{path}/user/{id}"
+    link = links.format(path=websitepath, id=current_user[0])
+    user_info['_links'] = {'self': {'href': link}}
     return jsonify(user_info), status.HTTP_200_OK
 
 
