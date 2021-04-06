@@ -167,7 +167,7 @@ paths:
         - Weights
       requestBody:
         required: true
-        description: A JSON object containing the login and password.
+        description: A JSON object containing the weight data.
         content:
           application/json:
             schema:
@@ -185,6 +185,8 @@ paths:
           
   /auth:
     post:
+      tags:
+      - Auth
       summary: Logs in and returns the authentication  cookie
       requestBody:
         required: true
@@ -201,6 +203,22 @@ paths:
                 type: string
                 example: KWS4FOID9o
       security: []    # no authentication
+      responses:
+        '200':
+          description: >
+            Successfully authenticated.
+            The session ID is returned in a cookie named `token`. You need to include this cookie in subsequent requests.
+          headers: 
+            Set-Cookie:
+              schema: 
+                type: string
+                example: token=abcde12345; Secure; HttpOnly; Path=/
+    get:
+      tags:
+      - Auth
+      summary: Logs in using http Basic Auth and returns the authentication  cookie
+      security: 
+      - basicAuth: []
       responses:
         '200':
           description: >
@@ -233,6 +251,16 @@ components:
         admin:
           type: integer
           example: 0
+        _links:
+          type: object
+          properties:
+            self:
+              type: object
+              properties:
+                href:
+                  type: string
+                  example: https://weight.james-farrell.com/api/user/28
+
     Weight:
       required:
         - user_id
@@ -248,6 +276,15 @@ components:
         weight:
           type: number
           example: 78.8
+        _links:
+          type: object
+          properties:
+            self:
+              type: object
+              properties:
+                href:
+                  type: string
+                  example: https://weight.james-farrell.com/api/user/28/weights/2021-02-12T21:57:10
   securitySchemes:
     cookieAuth:
       type: apiKey
