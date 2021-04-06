@@ -48,9 +48,7 @@ paths:
         - User
       summary: Gets a user by ID.
       description: >
-        A detailed description of the operation.
-        Use markdown for rich text representation,
-        such as **bold**, *italic*, and [links](https://swagger.io).
+        This method gets user data by the user_id
       operationId: getUserById
       parameters:
         - name: user_id
@@ -67,17 +65,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-  /user/{user_id}/weights:
-    get:
+    delete:
       security:
         - cookieAuth: []
       tags:
         - User
-      summary: Gets list of weights for user.
+      summary: Deletes a user by ID.
       description: >
-        A detailed description of the operation.
-        Use markdown for rich text representation,
-        such as **bold**, *italic*, and [links](https://swagger.io).
+        This method will delete a user and any associated weight data. **Must be an admin**
+      operationId: deleteUserById
       parameters:
         - name: user_id
           in: path
@@ -86,6 +82,35 @@ paths:
           schema:
             type: integer
             format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successfully Deleted"
+  /user/{user_id}/weights:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - Weights
+      summary: Gets list of weights for user.
+      description: >
+        This method returns all the weights associated with a user
+      parameters:
+        - name: user_id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 28
         - in: query
           name: start
           schema:
@@ -105,6 +130,75 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Weight'
+                  
+  /user/{user_id}/weights/{timestamp}:
+    get:
+      security:
+        - cookieAuth: []
+      tags:
+        - Weights
+      summary: Gets single weight for user.
+      description: >
+        This method returns a single weight associated with a user at that timestamp
+      parameters:
+        - name: user_id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 28
+        - name: timestamp
+          in: path
+          description: Timestamp
+          required: true
+          schema:
+            type: string
+            example: "2021-02-12T21:57:10"    
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Weight'
+    delete:
+      security:
+        - cookieAuth: []
+      tags:
+        - Weights
+      summary: Deletes single weight for user.
+      description: >
+        This method returns a single weight associated with a user at that timestamp
+      parameters:
+        - name: user_id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 28
+        - name: timestamp
+          in: path
+          description: Timestamp
+          required: true
+          schema:
+            type: string
+            example: "2021-02-12T21:57:10"    
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Weight'    
+                  
   /current-user:
     get:
       security:
@@ -113,9 +207,7 @@ paths:
         - User
       summary: Gets current user details.
       description: >
-        A detailed description of the operation.
-        Use markdown for rich text representation,
-        such as **bold**, *italic*, and [links](https://swagger.io).
+        This method will return the current user details based on the clients cookie.
       operationId: getcurrentUser
       responses:
         '200':
@@ -172,7 +264,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Weight'
-      security: []    # no authentication
+      security: 
+        - cookieAuth: []    # no authentication
       responses:
         '201':
           description: >
@@ -272,7 +365,7 @@ components:
           example: 28
         timestamp:
           type: string
-          example: "2021-03-28"
+          example: "2021-02-12 21:57:10"
         weight:
           type: number
           example: 78.8
