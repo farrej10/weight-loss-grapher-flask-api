@@ -3,8 +3,8 @@ info:
   title: Weight-loss Grapher
   description: >-
     This API will allow my [weight-loss
-    website](https://github.com/farrej10/weight-loss-web-ui) to get data from a
-    MySQL database. It provides a simple RESTful api to interface with.
+    website](https://weight.james-farrell.com) to get data from a
+    MySQL database. It provides a simple RESTful api to interface with. Checkout the [GitHub](https://github.com/farrej10/weight-loss-web-ui).
   version: 1.0.0
 servers:
   - url: 'https://weight.james-farrell.com/api'
@@ -310,6 +310,8 @@ paths:
       tags:
       - Auth
       summary: Logs in using http Basic Auth and returns the authentication  cookie
+      description: >
+        This method uses user_id instead email when authenticating.
       security: 
       - basicAuth: []
       responses:
