@@ -55,7 +55,19 @@ paths:
             Set-Cookie:
               schema: 
                 type: string
-                example: token=abcde12345; Secure; HttpOnly; Path=/
+                example: token=abcde12345; Secure; HttpOnly; Path=/ 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
     get:
       tags:
       - Auth
@@ -74,6 +86,18 @@ paths:
               schema: 
                 type: string
                 example: token=abcde12345; Secure; HttpOnly; Path=/
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
   /user:
     get:
       security:
@@ -92,6 +116,19 @@ paths:
       responses:
         '200':
           description: Successful operation
+          headers: 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
           content:
             application/json:
               schema:
@@ -119,6 +156,19 @@ paths:
       responses:
         '200':
           description: Successful operation
+          headers: 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
           content:
             application/json:
               schema:
@@ -143,6 +193,19 @@ paths:
       responses:
         '200':
           description: Successful operation
+          headers: 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
           content:
             application/json:
               schema:
@@ -182,6 +245,19 @@ paths:
       responses:
         '200':
           description: Successful operation
+          headers: 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
           content:
             application/json:
               schema:
@@ -217,6 +293,19 @@ paths:
       responses:
         '200':
           description: Successful operation
+          headers: 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
           content:
             application/json:
               schema:
@@ -250,6 +339,19 @@ paths:
       responses:
         '200':
           description: Successful operation
+          headers: 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
           content:
             application/json:
               schema:
@@ -270,6 +372,19 @@ paths:
       responses:
         '200':
           description: Successful operation
+          headers: 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
           content:
             application/json:
               schema:
@@ -305,6 +420,19 @@ paths:
       responses:
         '200':
           description: Successful operation
+          headers: 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
           content:
             application/json:
               schema:
@@ -328,6 +456,19 @@ paths:
         '201':
           description: >
             After a successful creation the object is returned
+          headers: 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
           content:
             application/json:
               schema:
