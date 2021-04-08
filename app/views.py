@@ -195,7 +195,7 @@ def create_weight_for_user(current_user, request):
     timestamp = datetime.datetime.fromtimestamp(
         ts).strftime('%Y-%m-%d %H:%M:%S')
 
-    if(request.form.get('user_id', None) != None):
+    if(request.form.get('weight', None) != None):
         data = request.form
         user_id = current_user[0]
         weight = data['weight']
@@ -517,7 +517,7 @@ def deleteUser(current_user, id):
 @token_required
 def current_user(current_user):
     user_info = dict(
-        id=current_user[0], name=current_user[1], admin=current_user[2],email=current_user[3])
+        user_id=current_user[0], name=current_user[1], admin=current_user[2],email=current_user[3])
     links = "{path}/user/{id}"
     link = links.format(path=websitepath, id=current_user[0])
     user_info['_links'] = {'self': {'href': link}}
@@ -620,16 +620,14 @@ def auth_and_redirect():
                         samesite='Strict', max_age=datetime.timedelta(minutes=10))
         return resp, status.HTTP_200_OK
 
-# @app.route('/tmp')
-
-
+@app.route('/tmp')
 def temp():
     password = b"KWS4FOID9o"
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password, salt)
 
     cur = mysql.connection.cursor()
-    mysqlcommand = "UPDATE `weightlossgrapher`.`user` SET `pass` = %s WHERE `user_id` = 28;"
+    mysqlcommand = "UPDATE `weightlossgrapher`.`user` SET `pass` = %s WHERE `user_id` = 33;"
     param = hashed
     try:
         cur.execute(mysqlcommand, (param,))

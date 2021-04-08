@@ -5,17 +5,75 @@ info:
     This API will allow my [weight-loss
     website](https://weight.james-farrell.com) to get data from a
     MySQL database. It provides a simple RESTful api to interface with. Checkout the [GitHub](https://github.com/farrej10/weight-loss-web-ui).
+    
+     Sample login:
+     >- user_id: 33
+     >- email: test@test.com
+     >- password: KWS4FOID9o
+     
+     Simplest way to get started is to click the authorize button on the left and enter the user_id and password in the basicAuth section then click authorize, finally use the **GET** **/auth** method to get your cookie token. From there you can use any of the none admin methods. **NOTE CHANGES TO THIS USER WILL BE RESET ONCE A DAY** if you'd like your own account reach out to me on [GitHub](https://github.com/farrej10).
+     
+     For more information read the information in the individual methods.
   version: 1.0.0
 servers:
   - url: 'https://weight.james-farrell.com/api'
 tags:
+  - name: Auth
+    description: Methods of Auth
   - name: User
     description: Operations about user
   - name: Weights
     description: Operations about Weights
-  - name: Auth
-    description: Methods of Auth
+
 paths:
+  /auth:
+    post:
+      tags:
+      - Auth
+      summary: Logs in and returns the authentication  cookie
+      requestBody:
+        required: true
+        description: A JSON object containing the login and password.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+               email: 
+                type: string
+                example: test@test.com
+               pass: 
+                type: string
+                example: KWS4FOID9o
+      security: []    # no authentication
+      responses:
+        '200':
+          description: >
+            Successfully authenticated.
+            The session ID is returned in a cookie named `token`. You need to include this cookie in subsequent requests.
+          headers: 
+            Set-Cookie:
+              schema: 
+                type: string
+                example: token=abcde12345; Secure; HttpOnly; Path=/
+    get:
+      tags:
+      - Auth
+      summary: Logs in using http Basic Auth and returns the authentication  cookie
+      description: >
+        This method uses user_id instead email when authenticating.
+      security: 
+      - basicAuth: []
+      responses:
+        '200':
+          description: >
+            Successfully authenticated.
+            The session ID is returned in a cookie named `token`. You need to include this cookie in subsequent requests.
+          headers: 
+            Set-Cookie:
+              schema: 
+                type: string
+                example: token=abcde12345; Secure; HttpOnly; Path=/
   /user:
     get:
       security:
@@ -23,7 +81,7 @@ paths:
       tags:
         - User
       summary: Gets all users.
-      description: "Must be an admin to perform this action, can be filtered by name."
+      description: "Must be an **admin** to perform this action, can be filtered by name."
       operationId: getUserList
       parameters:
         - in: query
@@ -48,7 +106,7 @@ paths:
         - User
       summary: Gets a user by ID.
       description: >
-        This method gets user data by the user_id
+        This method gets user data by the user_id. You can only get your own users information unless you are an **admin**
       operationId: getUserById
       parameters:
         - name: user_id
@@ -101,7 +159,7 @@ paths:
         - Weights
       summary: Gets list of weights for user.
       description: >
-        This method returns all the weights associated with a user
+        This method returns all the weights associated with a user. You can only get your own users information unless you are an **admin** 
       parameters:
         - name: user_id
           in: path
@@ -110,7 +168,7 @@ paths:
           schema:
             type: integer
             format: int64
-            example: 28
+            example: 33
         - in: query
           name: start
           schema:
@@ -139,7 +197,7 @@ paths:
         - Weights
       summary: Gets single weight for user.
       description: >
-        This method returns a single weight associated with a user at that timestamp
+        This method returns a single weight associated with a user at that timestamp. You can only get your own users information unless you are an **admin**
       parameters:
         - name: user_id
           in: path
@@ -148,14 +206,14 @@ paths:
           schema:
             type: integer
             format: int64
-            example: 28
+            example: 33
         - name: timestamp
           in: path
           description: Timestamp
           required: true
           schema:
             type: string
-            example: "2021-02-12T21:57:10"    
+            example: "2021-04-01 00:00:00"    
       responses:
         '200':
           description: Successful operation
@@ -172,7 +230,7 @@ paths:
         - Weights
       summary: Deletes single weight for user.
       description: >
-        This method returns a single weight associated with a user at that timestamp
+        This method deletes a single weight associated with a user at that timestamp. You can only delete your own users information unless you are an **admin**
       parameters:
         - name: user_id
           in: path
@@ -181,7 +239,7 @@ paths:
           schema:
             type: integer
             format: int64
-            example: 28
+            example: 33
         - name: timestamp
           in: path
           description: Timestamp
@@ -222,7 +280,7 @@ paths:
         - cookieAuth: []
       tags:
         - Weights
-      summary: Gets all weights for all users.
+      summary: Gets all weights for all users. You can only get your own users information unless you are an **admin**
       parameters:
         - in: query
           name: user_id
@@ -254,7 +312,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Weight'
     post:
-      summary: Creates a new weight for a user.
+      summary: Creates a new weight for a user. You can only get your own users information unless you are an **admin**
       tags:
         - Weights
       requestBody:
@@ -276,54 +334,7 @@ paths:
                 $ref: '#/components/schemas/Weight'
           
           
-  /auth:
-    post:
-      tags:
-      - Auth
-      summary: Logs in and returns the authentication  cookie
-      requestBody:
-        required: true
-        description: A JSON object containing the login and password.
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-               email: 
-                type: string
-                example: test@test.com
-               pass: 
-                type: string
-                example: KWS4FOID9o
-      security: []    # no authentication
-      responses:
-        '200':
-          description: >
-            Successfully authenticated.
-            The session ID is returned in a cookie named `token`. You need to include this cookie in subsequent requests.
-          headers: 
-            Set-Cookie:
-              schema: 
-                type: string
-                example: token=abcde12345; Secure; HttpOnly; Path=/
-    get:
-      tags:
-      - Auth
-      summary: Logs in using http Basic Auth and returns the authentication  cookie
-      description: >
-        This method uses user_id instead email when authenticating.
-      security: 
-      - basicAuth: []
-      responses:
-        '200':
-          description: >
-            Successfully authenticated.
-            The session ID is returned in a cookie named `token`. You need to include this cookie in subsequent requests.
-          headers: 
-            Set-Cookie:
-              schema: 
-                type: string
-                example: token=abcde12345; Secure; HttpOnly; Path=/
+
 components:
   schemas:
     User:
@@ -336,7 +347,7 @@ components:
       properties:
         user_id:
           type: integer
-          example: 28
+          example: 33
         name:
           type: string
           example: Test User
@@ -354,7 +365,7 @@ components:
               properties:
                 href:
                   type: string
-                  example: https://weight.james-farrell.com/api/user/28
+                  example: https://weight.james-farrell.com/api/user/33
 
     Weight:
       required:
@@ -364,13 +375,13 @@ components:
       properties:
         user_id:
           type: integer
-          example: 28
+          example: 33
         timestamp:
           type: string
-          example: "2021-02-12 21:57:10"
+          example: "2021-04-01 00:00:00"
         weight:
           type: number
-          example: 78.8
+          example: 75.0
         _links:
           type: object
           properties:
@@ -379,7 +390,7 @@ components:
               properties:
                 href:
                   type: string
-                  example: https://weight.james-farrell.com/api/user/28/weights/2021-02-12T21:57:10
+                  example: https://weight.james-farrell.com/api/user/33/weights/2021-04-01T00:00:00
   securitySchemes:
     cookieAuth:
       type: apiKey
