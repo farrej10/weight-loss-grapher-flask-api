@@ -11,7 +11,7 @@ info:
      >- email: test@test.com
      >- password: KWS4FOID9o
      
-     Simplest way to get started is to click the authorize button on the left and enter the user_id and password in the basicAuth section then click authorize, finally use the **GET** **/auth** method to get your cookie token. From there you can use any of the none admin methods. **NOTE CHANGES TO THIS USER WILL BE RESET ONCE A DAY** if you'd like your own account reach out to me on [GitHub](https://github.com/farrej10).
+     Simplest way to get started is to click the authorize button on the left and enter the user_id and password in the basicAuth section then click authorize, finally use the **GET** **/auth** method to get your cookie token. From there you can use any of the none admin methods. **NOTE CHANGES TO THIS USER WILL BE RESET EVERY Hour** if you'd like your own account reach out to me on [GitHub](https://github.com/farrej10).
      
      For more information read the information in the individual methods.
   version: 1.0.0
@@ -135,6 +135,40 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+    post:
+      security: 
+        - cookieAuth: []
+      tags:
+      - User
+      summary: Creates a new user.
+      requestBody:
+        required: true
+        description: Must be an **admin** to perform this action
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Userpost'
+      responses:
+        '201':
+          description: >
+            Returns the created User.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          headers: 
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per hour.
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: The number of requests left for the time window.
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time in Unix time till reset
   /user/{user_id}:
     get:
       security:
@@ -449,7 +483,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Weight'
+              $ref: '#/components/schemas/Weightpost'
       security: 
         - cookieAuth: []    # no authentication
       responses:
@@ -532,6 +566,46 @@ components:
                 href:
                   type: string
                   example: https://weight.james-farrell.com/api/user/33/weights/2021-04-01T00:00:00
+    
+    Weightpost:
+      required:
+        - user_id
+        - weight
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: 33
+        timestamp:
+          type: string
+          example: "2021-04-01 00:00:00"
+        weight:
+          type: number
+          example: 75.0
+          
+    Userpost:
+      type: object
+      required:
+        - name
+        - email
+        - admin
+      properties:
+        user_id:
+          type: integer
+          example: 33
+        name:
+          type: string
+          example: Test User
+        pass:
+          type: string
+          example: password123
+        email:
+          type: string
+          example: test@test.com
+        admin:
+          type: integer
+          example: 0
+    
   securitySchemes:
     cookieAuth:
       type: apiKey
