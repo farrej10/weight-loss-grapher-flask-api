@@ -297,6 +297,9 @@ def create_user(current_user):
 
     # extract content
     content = request.json
+    user = None
+    if 'user_id' in content:
+        user = content['user_id']
     name = content['name']
     email = content['email']
     pwd = content['pass']
@@ -307,24 +310,44 @@ def create_user(current_user):
     hashed = bcrypt.hashpw(password, salt)
 
     cur = mysql.connection.cursor()
-    try:
-        cur.execute(
-            "INSERT INTO `weightlossgrapher`.`user` (`name`,`email`,`pass`,`admin`) VALUES (%s,%s,%s,%s);", (name, email, hashed, admin))
-        cur.execute(
-            "SELECT user_id,name,admin,email FROM `weightlossgrapher`.`user` WHERE `user_id`= LAST_INSERT_ID()")
-        mysql.connection.commit()
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify(error=str(e)), status.HTTP_400_BAD_REQUEST
+    if user == None:
+        try:
+            cur.execute(
+                "INSERT INTO `weightlossgrapher`.`user` (`name`,`email`,`pass`,`admin`) VALUES (%s,%s,%s,%s);", (name, email, hashed, admin))
+            cur.execute(
+                "SELECT user_id,name,admin,email FROM `weightlossgrapher`.`user` WHERE `user_id`= LAST_INSERT_ID()")
+            mysql.connection.commit()
+        except Exception as e:
+            mysql.connection.rollback()
+            return jsonify(error=str(e)), status.HTTP_400_BAD_REQUEST
 
-    fields = [i[0] for i in cur.description]
-    results = [dict(zip(fields, row)) for row in cur.fetchall()]
+        fields = [i[0] for i in cur.description]
+        results = [dict(zip(fields, row)) for row in cur.fetchall()]
 
-    cur.close()
-    links = "{path}/user/{id}"
-    link = links.format(path=websitepath, id=results[0]['user_id'])
-    results[0]['_links'] = {'self': {'href': link}}
-    return jsonify(results[0]), status.HTTP_201_CREATED
+        cur.close()
+        links = "{path}/user/{id}"
+        link = links.format(path=websitepath, id=results[0]['user_id'])
+        results[0]['_links'] = {'self': {'href': link}}
+        return jsonify(results[0]), status.HTTP_201_CREATED
+    else:
+        try:
+            cur.execute(
+                "INSERT INTO `weightlossgrapher`.`user` (`user_id`,`name`,`email`,`pass`,`admin`) VALUES (%s,%s,%s,%s,%s);", (user,name, email, hashed, admin))
+            cur.execute(
+                "SELECT user_id,name,admin,email FROM `weightlossgrapher`.`user` WHERE `user_id`= %s", (user,))
+            mysql.connection.commit()
+        except Exception as e:
+            mysql.connection.rollback()
+            return jsonify(error=str(e)), status.HTTP_400_BAD_REQUEST
+
+        fields = [i[0] for i in cur.description]
+        results = [dict(zip(fields, row)) for row in cur.fetchall()]
+
+        cur.close()
+        links = "{path}/user/{id}"
+        link = links.format(path=websitepath, id=results[0]['user_id'])
+        results[0]['_links'] = {'self': {'href': link}}
+        return jsonify(results[0]), status.HTTP_201_CREATED
 
 
 @app.route('/weights', methods=['GET', 'POST'])
@@ -619,24 +642,6 @@ def auth_and_redirect():
         resp.set_cookie('token', token, httponly=True, secure=True,
                         samesite='Strict', max_age=datetime.timedelta(minutes=10))
         return resp, status.HTTP_200_OK
-
-@app.route('/tmp')
-def temp():
-    password = b"KWS4FOID9o"
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password, salt)
-
-    cur = mysql.connection.cursor()
-    mysqlcommand = "UPDATE `weightlossgrapher`.`user` SET `pass` = %s WHERE `user_id` = 33;"
-    param = hashed
-    try:
-        cur.execute(mysqlcommand, (param,))
-        mysql.connection.commit()
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify({'error': str(e[0])}), status.HTTP_500_INTERNAL_SERVER_ERROR
-
-    return jsonify({'message': 'success'}), status.HTTP_200_OK
 
 
 if __name__ == '__main__':
